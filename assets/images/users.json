@@ -1,0 +1,58 @@
+{
+  "users": {
+    "admin_001": {
+      "name": "Admin User",
+      "email": "admin@restro.com",
+      "role": "admin",
+      "isActive": true,
+      "createdAt": {
+        "_seconds": 1700000000,
+        "_nanoseconds": 0
+      }
+    },
+
+    "manager_001": {
+      "name": "Manager John",
+      "email": "manager@restro.com",
+      "role": "manager",
+      "isActive": true,
+      "createdAt": {
+        "_seconds": 1700000100,
+        "_nanoseconds": 0
+      }
+    },
+
+    "staff_001": {
+      "name": "James",
+      "email": "james@restro.com",
+      "role": "staff",
+      "isActive": true,
+      "createdAt": {
+        "_seconds": 1700000200,
+        "_nanoseconds": 0
+      }
+    },
+
+    "staff_002": {
+      "name": "Sophia",
+      "email": "sophia@restro.com",
+      "role": "staff",
+      "isActive": true,
+      "createdAt": {
+        "_seconds": 1700000300,
+        "_nanoseconds": 0
+      }
+    },
+
+    "staff_003": {
+      "name": "Liam",
+      "email": "liam@restro.com",
+      "role": "staff",
+      "isActive": true,
+      "createdAt": {
+        "_seconds": 1700000400,
+        "_nanoseconds": 0
+      }
+    }
+  }
+}
