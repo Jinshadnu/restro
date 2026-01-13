@@ -88,9 +88,19 @@ class _TaskCompletedScreenState extends State<TaskCompletedScreen> {
                           child: ListView.builder(
                             itemCount: filtered.length,
                             itemBuilder: (context, index) {
-                              return AnimatedCompletedTask(
-                                task: filtered[index],
-                                index: index,
+                              final task = filtered[index];
+                              return GestureDetector(
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Task already completed'),
+                                    ),
+                                  );
+                                },
+                                child: AnimatedCompletedTask(
+                                  task: task,
+                                  index: index,
+                                ),
                               );
                             },
                           ),

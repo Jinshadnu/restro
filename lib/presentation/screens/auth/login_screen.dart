@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
+import 'package:restro/data/datasources/remote/firestore_service.dart';
 import 'package:restro/presentation/widgets/custome_text_field.dart';
 import 'package:restro/presentation/widgets/gradient_button.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
@@ -15,7 +16,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final emailCtrl = TextEditingController();
+  final identifierCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -109,16 +110,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         // ---------------- EMAIL ----------------
                         CustomeTextField(
-                          controller: emailCtrl,
-                          label: 'Email',
+                          controller: identifierCtrl,
+                          label: 'Email or Phone',
                           prefixICon: Icons.email_outlined,
-                          keyboardType: TextInputType.emailAddress,
+                          keyboardType: TextInputType.text,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Enter your email';
+                              return 'Enter your email or phone number';
                             }
-                            if (!value.contains('@')) {
-                              return 'Enter a valid email';
+                            // Check if it's an email or phone number
+                            final isEmail = value.contains('@');
+                            final isPhone =
+                                RegExp(r'^[0-9+]+$').hasMatch(value);
+
+                            if (!isEmail && !isPhone) {
+                              return 'Enter a valid email or phone number';
                             }
                             return null;
                           },
@@ -161,11 +167,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: authProvider.isLoading
                               ? null
                               : () async {
-                                  if (!_formKey.currentState!.validate())
+                                  if (!_formKey.currentState!.validate()) {
                                     return;
+                                  }
 
                                   final error = await authProvider.login(
-                                    email: emailCtrl.text.trim(),
+                                    identifier: identifierCtrl.text.trim(),
                                     password: passwordCtrl.text.trim(),
                                   );
 
@@ -195,12 +202,48 @@ class _LoginScreenState extends State<LoginScreen> {
                                   if (role == "admin") {
                                     Navigator.pushReplacementNamed(
                                         context, AppRoutes.adminDashboard);
+                                  } else if (role == "owner") {
+                                    Navigator.pushReplacementNamed(
+                                        context, AppRoutes.ownerDashboard);
                                   } else if (role == "manager") {
                                     Navigator.pushReplacementNamed(
                                         context, AppRoutes.managerDashboard);
                                   } else if (role == "staff") {
+                                    final now = DateTime.now();
+                                    if (now.hour < 14) {
+                                      Navigator.pushReplacementNamed(
+                                          context, AppRoutes.staffDashboard);
+                                      return;
+                                    }
+
+                                    final firestoreService = FirestoreService();
+                                    final todayAttendance =
+                                        await firestoreService
+                                            .getTodayAttendance(user.id);
+
+                                    if (todayAttendance.docs.isEmpty) {
+                                      Navigator.pushReplacementNamed(
+                                          context, AppRoutes.attendanceSelfie);
+                                      return;
+                                    }
+
+                                    final data = todayAttendance.docs.first
+                                        .data() as Map<String, dynamic>;
+                                    final status =
+                                        (data['verification_status'] ??
+                                                data['status'] ??
+                                                '')
+                                            .toString()
+                                            .toLowerCase();
+                                    final isApproved = status == 'approved' ||
+                                        status == 'verified';
+
                                     Navigator.pushReplacementNamed(
-                                        context, AppRoutes.staffDashboard);
+                                      context,
+                                      isApproved
+                                          ? AppRoutes.staffDashboard
+                                          : AppRoutes.attendanceSelfie,
+                                    );
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
@@ -209,6 +252,58 @@ class _LoginScreenState extends State<LoginScreen> {
                                     );
                                   }
                                 },
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(color: Colors.grey.shade300),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(
+                                'OR',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(color: Colors.grey.shade300),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton.icon(
+                            onPressed: authProvider.isLoading
+                                ? null
+                                : () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.staffLogin,
+                                    );
+                                  },
+                            icon: const Icon(Icons.pin_outlined),
+                            label: const Text('Staff Login (PIN)'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryColor,
+                              side: const BorderSide(
+                                color: AppTheme.primaryColor,
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),

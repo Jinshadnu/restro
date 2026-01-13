@@ -6,36 +6,50 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.4
+  sdk: '>=3.4.4 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
+  get: ^4.6.6
   provider: ^6.1.5+1
-  firebase_core: ^4.2.1
-  firebase_auth: ^6.1.2
-  cloud_firestore: ^6.1.0
-  firebase_messaging: ^16.0.4
-  firebase_storage: ^13.0.4
-  sqflite: ^2.4.1
+
+  # 🔥 Firebase (ALL SAME GENERATION – v2)
+  firebase_core: ^2.27.1
+  firebase_auth: ^4.17.4
+  cloud_firestore: ^4.15.9
+  firebase_messaging: ^14.9.4
+  firebase_storage: ^11.7.7
+
+  sqflite: ^2.3.3
   path: ^1.9.0
   path_provider: ^2.1.5
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.3.3
   image_picker: ^1.1.2
   shimmer: ^3.0.0
   intl: ^0.20.2
   uuid: ^4.2.1
+
+  # 🔒 Dart 3.4 SAFE VERSIONS
   flutter_local_notifications: ^17.2.3
   timezone: ^0.9.4
+  geocoding: ^2.2.2
+  permission_handler: ^11.3.1
+  location: ^5.0.0
+  camera: ^0.10.5+4
+  flutter_image_compress: ^2.3.0
+  connectivity_plus: ^6.0.3
+  geolocator: ^11.0.0
+  crypto: ^3.0.3
+  cloud_functions: ^4.7.0
+  firebase_app_check: ^0.2.1+8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^4.0.0
-
   flutter_launcher_icons: ^0.13.1
 
 flutter_launcher_icons:
@@ -45,6 +59,5 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
-
   assets:
     - assets/images/

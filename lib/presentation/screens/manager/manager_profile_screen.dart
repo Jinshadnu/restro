@@ -14,7 +14,7 @@ class ManagerProfileScreen extends StatelessWidget {
     final currentUser = authProvider.currentUser;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: AppTheme.backGroundColor,
       appBar: const CustomAppbar(title: "My Profile"),
       body: SingleChildScrollView(
         child: Column(
@@ -33,7 +33,7 @@ class ManagerProfileScreen extends StatelessWidget {
                     child: CircleAvatar(
                       radius: 42,
                       backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                      child: Icon(
+                      child: const Icon(
                         Icons.person,
                         size: 50,
                         color: AppTheme.primaryColor,
@@ -164,19 +164,15 @@ class ManagerProfileScreen extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
           Flexible(
             child: Text(
               value,
               style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+                  color: AppTheme.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600),
               textAlign: TextAlign.right,
             ),
           ),
@@ -196,6 +192,7 @@ class ManagerProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,

@@ -25,22 +25,36 @@ class TaskRepository implements TaskRepositoryInterface {
         .map((tasks) => tasks.map((task) => task as TaskEntity).toList());
   }
 
+  @override
   Future<void> createTask(TaskEntity task) async {
     final taskModel = TaskModel.fromEntity(task);
     await _firestoreService.createTask(taskModel);
   }
 
+  @override
   Future<void> completeTask(String taskId, {File? photo}) async {
     String? photoUrl;
     if (photo != null) {
       photoUrl = await _storageService.uploadTaskPhoto(taskId, photo);
     }
 
+    // Get task to check if submission is late
+    final task = await _firestoreService.getTaskById(taskId);
+    final now = DateTime.now();
+    bool isLate = false;
+
+    if (task?.dueDate != null) {
+      // Check if submission is more than 15 minutes late
+      final lateThreshold = task!.dueDate!.add(const Duration(minutes: 15));
+      isLate = now.isAfter(lateThreshold);
+    }
+
     await _firestoreService.updateTaskStatus(
       taskId,
       'verificationPending',
       photoUrl: photoUrl,
-      completedAt: DateTime.now(),
+      completedAt: now,
+      isLate: isLate,
     );
   }
 
@@ -78,6 +92,7 @@ class TaskRepository implements TaskRepositoryInterface {
         .map((tasks) => tasks.map((task) => task as TaskEntity).toList());
   }
 
+  @override
   Stream<List<TaskEntity>> getAdminTasks() {
     return _firestoreService
         .getAllTasks()

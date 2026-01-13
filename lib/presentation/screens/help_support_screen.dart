@@ -298,7 +298,7 @@ class HelpSupportScreen extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
+              const Icon(
                 Icons.help_outline,
                 color: AppTheme.primaryColor,
                 size: 20,
@@ -339,7 +339,7 @@ class HelpSupportScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.check_circle,
             color: Colors.green,
             size: 20,

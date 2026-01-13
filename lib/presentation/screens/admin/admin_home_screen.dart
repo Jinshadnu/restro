@@ -7,9 +7,10 @@ import 'package:restro/presentation/widgets/animated_task_admin.dart';
 import 'package:restro/presentation/widgets/custom_appbar.dart';
 import 'package:restro/presentation/widgets/status_car_ui.dart';
 import 'package:restro/utils/theme/theme.dart';
+import 'package:intl/intl.dart';
 
 class AdminHomeScreen extends StatelessWidget {
-  AdminHomeScreen({super.key});
+  const AdminHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -78,18 +79,13 @@ class AdminHomeScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Hi, ${auth.currentUser!.name} 👋",
+                              DateFormat('EEEE, MMMM d, yyyy')
+                                  .format(DateTime.now()),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
                               ),
-                            ),
-                            const SizedBox(height: 5),
-                            const Text(
-                              'Admin',
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 16),
                             ),
                           ],
                         ),

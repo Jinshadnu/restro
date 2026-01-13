@@ -8,6 +8,7 @@ import 'package:restro/presentation/screens/admin/owner_dashboard_shell.dart';
 import 'package:restro/presentation/screens/admin/owner_reports_screen.dart';
 import 'package:restro/presentation/screens/admin/owner_settings_screen.dart';
 import 'package:restro/presentation/screens/auth/login_screen.dart';
+import 'package:restro/presentation/screens/auth/staff_login_screen.dart';
 import 'package:restro/presentation/screens/auth/register_screen.dart';
 import 'package:restro/presentation/screens/edit_profile_screen.dart';
 import 'package:restro/presentation/screens/help_support_screen.dart';
@@ -17,10 +18,14 @@ import 'package:restro/presentation/screens/splash_screen.dart';
 import 'package:restro/presentation/screens/staff/staff_dashboard_screen.dart';
 import 'package:restro/presentation/screens/staff/start_task_screen.dart';
 import 'package:restro/presentation/screens/staff/task_details_screen.dart';
+import 'package:restro/presentation/screens/staff/attendance_selfie_screen.dart';
+import 'package:restro/presentation/screens/manager/attendance_verification_screen.dart';
+import 'package:restro/presentation/screens/manager/register_staff_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
+  static const String staffLogin = '/staff_login';
   static const String register = '/register';
 
   static const String adminDashboard = '/admin-dashboard';
@@ -38,6 +43,9 @@ class AppRoutes {
   static const String ownerSettings = '/owner_settings';
   static const String ownerDashboard = '/owner_dashboard';
   static const String assignTask = '/assign_task';
+  static const String attendanceSelfie = '/attendance_selfie';
+  static const String attendanceVerification = '/attendance_verification';
+  static const String registerStaff = '/register_staff';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -46,6 +54,11 @@ class AppRoutes {
 
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
+
+      case staffLogin:
+        // Use a deferred or dynamic import if possible, but here we'll just add the import later.
+        // For now, I'll add the builder, assuming the file will exist.
+        return MaterialPageRoute(builder: (_) => const StaffLoginScreen());
 
       case register:
         return MaterialPageRoute(builder: (_) => const RegisterScreen());
@@ -132,6 +145,21 @@ class AppRoutes {
               ),
             ),
           ),
+        );
+
+      case attendanceSelfie:
+        return MaterialPageRoute(
+          builder: (_) => const AttendanceSelfieScreen(),
+        );
+
+      case attendanceVerification:
+        return MaterialPageRoute(
+          builder: (_) => const AttendanceVerificationScreen(),
+        );
+
+      case registerStaff:
+        return MaterialPageRoute(
+          builder: (_) => const ManagerRegisterStaffScreen(),
         );
 
       default:

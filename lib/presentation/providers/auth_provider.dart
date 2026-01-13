@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:restro/data/models/user_model.dart';
 import 'package:restro/data/repositories/auth_repository.dart';
+import 'package:restro/data/datasources/remote/firestore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthenticationProvider extends ChangeNotifier {
@@ -11,6 +12,7 @@ class AuthenticationProvider extends ChangeNotifier {
 
   AppUserModel? currentUser;
   bool isLoading = false;
+  bool hasMarkedAttendanceToday = false;
 
   // ----------------------------------------------------------
   //  LOADING STATE
@@ -53,22 +55,26 @@ class AuthenticationProvider extends ChangeNotifier {
   // ----------------------------------------------------------
   //  REGISTER USER
   // ----------------------------------------------------------
+  // In lib/presentation/providers/auth_provider.dart
+
   Future<String?> register({
     required String email,
     required String password,
     required String name,
     required String phone,
     required String role,
+    // Remove pin parameter
   }) async {
     try {
       setLoading(true);
 
       final userEntity = await repository.registerUser(
         email: email,
-        name: name,
         password: password,
-        role: role,
+        name: name,
         phone: phone,
+        role: role,
+        // Remove pin parameter
       );
 
       currentUser = AppUserModel(
@@ -78,6 +84,9 @@ class AuthenticationProvider extends ChangeNotifier {
         name: userEntity.name,
         phone: userEntity.phone,
         lastSynced: userEntity.lastSynced,
+        isSelfieVerified: userEntity.isSelfieVerified,
+        selfieVerifiedAt: userEntity.selfieVerifiedAt,
+        // Remove pin field
       );
 
       await saveUserSession(currentUser!);
@@ -85,7 +94,6 @@ class AuthenticationProvider extends ChangeNotifier {
       setLoading(false);
       notifyListeners();
       return null;
-
     } catch (e) {
       setLoading(false);
       return e.toString();
@@ -96,14 +104,14 @@ class AuthenticationProvider extends ChangeNotifier {
   //  LOGIN USER
   // ----------------------------------------------------------
   Future<String?> login({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
     try {
       setLoading(true);
 
       final userEntity = await repository.login(
-        email: email,
+        identifier: identifier,
         password: password,
       );
 
@@ -114,6 +122,8 @@ class AuthenticationProvider extends ChangeNotifier {
         name: userEntity.name,
         phone: userEntity.phone,
         lastSynced: userEntity.lastSynced,
+        isSelfieVerified: userEntity.isSelfieVerified,
+        selfieVerifiedAt: userEntity.selfieVerifiedAt,
       );
 
       await saveUserSession(currentUser!);
@@ -121,7 +131,36 @@ class AuthenticationProvider extends ChangeNotifier {
       setLoading(false);
       notifyListeners();
       return null;
+    } catch (e) {
+      setLoading(false);
+      return e.toString();
+    }
+  }
 
+  // ----------------------------------------------------------
+  //  LOGIN WITH PIN
+  // ----------------------------------------------------------
+  Future<String?> loginWithPin(String pin) async {
+    try {
+      setLoading(true);
+
+      final userEntity = await repository.loginWithPin(pin);
+
+      currentUser = AppUserModel(
+          id: userEntity.id,
+          email: userEntity.email,
+          role: userEntity.role,
+          name: userEntity.name,
+          phone: userEntity.phone,
+          lastSynced: userEntity.lastSynced,
+          isSelfieVerified: userEntity.isSelfieVerified,
+          selfieVerifiedAt: userEntity.selfieVerifiedAt);
+
+      await saveUserSession(currentUser!);
+
+      setLoading(false);
+      notifyListeners();
+      return null;
     } catch (e) {
       setLoading(false);
       return e.toString();
@@ -135,6 +174,46 @@ class AuthenticationProvider extends ChangeNotifier {
     await repository.logout();
     currentUser = null;
     await clearSession();
+    notifyListeners();
+  }
+
+  Future<void> updateVerificationStatus(bool verified) async {
+    if (currentUser != null) {
+      currentUser = AppUserModel(
+        id: currentUser!.id,
+        email: currentUser!.email,
+        role: currentUser!.role,
+        name: currentUser!.name,
+        phone: currentUser!.phone,
+        lastSynced: currentUser!.lastSynced,
+        isSelfieVerified: verified,
+        selfieVerifiedAt:
+            verified ? DateTime.now().millisecondsSinceEpoch : null,
+      );
+      await saveUserSession(currentUser!);
+      notifyListeners();
+    }
+  }
+
+  // ----------------------------------------------------------
+  //  ATTENDANCE CHECK
+  // ----------------------------------------------------------
+  Future<void> checkTodayAttendance() async {
+    if (currentUser == null) return;
+
+    try {
+      final firestoreService = FirestoreService();
+      final attendance =
+          await firestoreService.getTodayAttendance(currentUser!.id);
+      hasMarkedAttendanceToday = attendance.docs.isNotEmpty;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error checking attendance: $e');
+    }
+  }
+
+  void setAttendanceMarked(bool value) {
+    hasMarkedAttendanceToday = value;
     notifyListeners();
   }
 }

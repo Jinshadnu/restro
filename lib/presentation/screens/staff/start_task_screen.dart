@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/data/models/task_model.dart';
@@ -24,6 +25,10 @@ class _StartTaskScreenState extends State<StartTaskScreen> {
   List<File?> images = [null, null, null]; // up to 3 images when required
   final TextEditingController notesController = TextEditingController();
 
+  List<String> _sopSteps = [];
+  List<bool> _stepChecklist = [];
+  bool _isLoadingSOP = true;
+
   late String startDateTime;
   String? completionDateTime; // assigned on submit
 
@@ -33,33 +38,54 @@ class _StartTaskScreenState extends State<StartTaskScreen> {
   void initState() {
     super.initState();
     startDateTime = DateFormat("dd MMM yyyy • hh:mm a").format(DateTime.now());
-    _initPhotoRequirement();
+    _loadSOPAndRequirement();
   }
 
-  Future<void> _initPhotoRequirement() async {
-    // Prefer task flag (manager may override SOP)
-    if (widget.task.requiresPhoto) {
-      setState(() => _requiresPhoto = true);
-      return;
-    }
+  Future<void> _loadSOPAndRequirement() async {
+    setState(() => _isLoadingSOP = true);
+    
+    // 1. Initial photo requirement from task
+    _requiresPhoto = widget.task.requiresPhoto;
 
-    // Fallback to SOP config if present
+    // 2. Fetch SOP for steps and potential override
     if (widget.task.sopid.isNotEmpty) {
       try {
         final sop = await _firestoreService.getSOPById(widget.task.sopid);
-        if (!mounted) return;
-        setState(() {
-          _requiresPhoto = sop?.requiresPhoto ?? false;
-        });
-      } catch (_) {
-        if (!mounted) return;
-        setState(() => _requiresPhoto = false);
+        if (mounted && sop != null) {
+          setState(() {
+            _sopSteps = sop.steps;
+            _stepChecklist = List<bool>.filled(sop.steps.length, false);
+            // If task doesn't explicitly have requiresPhoto, use SOP's
+            if (!widget.task.requiresPhoto) {
+              _requiresPhoto = sop.requiresPhoto;
+            }
+          });
+        }
+      } catch (e) {
+        debugPrint("Error loading SOP: $e");
       }
+    }
+    
+    if (mounted) {
+      setState(() => _isLoadingSOP = false);
     }
   }
 
   Future<void> pickImage(int index) async {
     try {
+      // Request camera permission
+      final cameraStatus = await Permission.camera.request();
+      if (!cameraStatus.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Camera permission is required to capture task photos'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final picked = await picker.pickImage(source: ImageSource.camera);
       if (picked != null) {
         setState(() {
@@ -73,6 +99,10 @@ class _StartTaskScreenState extends State<StartTaskScreen> {
   }
 
   bool get canSubmit {
+    // Check if all checklist items are completed
+    bool checklistDone = _stepChecklist.every((checked) => checked);
+    if (!checklistDone) return false;
+
     // If photo is not required, allow submit always (notes are optional)
     if (!_requiresPhoto) return true;
 
@@ -110,13 +140,73 @@ class _StartTaskScreenState extends State<StartTaskScreen> {
             const SizedBox(height: 6),
 
             Text(
-              _requiresPhoto
-                  ? "Capture required images and fill in all details before you submit."
-                  : "Provide the task completion notes and submit.",
+              _sopSteps.isNotEmpty
+                  ? "Complete the checklist, capture required images, and provide finishing notes."
+                  : (_requiresPhoto
+                      ? "Capture required images and fill in all details before you submit."
+                      : "Provide the task completion notes and submit."),
               style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
             ),
 
             const SizedBox(height: 20),
+
+            /// ===========================
+            /// ✅ CHECKLIST SECTION
+            /// ===========================
+            if (_isLoadingSOP)
+              const Center(child: CircularProgressIndicator())
+            else if (_sopSteps.isNotEmpty) ...[
+              const Text(
+                "Task Checklist",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 10),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _sopSteps.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _stepChecklist[index]
+                            ? Colors.green.shade200
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: CheckboxListTile(
+                      value: _stepChecklist[index],
+                      onChanged: (val) {
+                        setState(() {
+                          _stepChecklist[index] = val ?? false;
+                        });
+                      },
+                      title: Text(
+                        _sopSteps[index],
+                        style: TextStyle(
+                          fontSize: 14,
+                          decoration: _stepChecklist[index]
+                              ? TextDecoration.lineThrough
+                              : null,
+                          color: _stepChecklist[index]
+                              ? Colors.grey
+                              : Colors.black87,
+                        ),
+                      ),
+                      activeColor: Colors.green,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 15),
+            ],
 
             /// ===========================
             /// 📅 DATE & TIME SECTION
@@ -262,7 +352,10 @@ class _StartTaskScreenState extends State<StartTaskScreen> {
             ),
             child: const Text(
               "Submit Task",
-              style: TextStyle(color: Colors.white,fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600),
             ),
           ),
         ),

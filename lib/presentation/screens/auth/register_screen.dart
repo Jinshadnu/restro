@@ -22,11 +22,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController phoneCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
   final TextEditingController confirmPasswordCtrl = TextEditingController();
+  final TextEditingController pinCtrl = TextEditingController();
 
   String? selectedUserType;
 
   // 💡 Match your Firebase roles exactly
-  final List<String> userTypes = ["staff", "manager", "admin"];
+  final List<String> userTypes = ["STAFF", "MANAGER", "OWNER"];
   // If you want owner => change "admin" to "owner"
 
   @override
@@ -189,6 +190,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
 
+                        // PIN if Staff
+                        if (selectedUserType == "STAFF")
+                          Column(
+                            children: [
+                              CustomeTextField(
+                                controller: pinCtrl,
+                                label: "Staff PIN (4 digits)",
+                                prefixICon: Icons.lock_clock_outlined,
+                                keyboardType: TextInputType.number,
+                                isPassword: true,
+                                validator: (v) {
+                                  if (selectedUserType != "STAFF") return null;
+                                  if (v == null || v.length != 4)
+                                    return "Enter 4-digit PIN";
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          ),
+
                         // PASSWORD
                         CustomeTextField(
                           controller: passwordCtrl,
@@ -230,8 +252,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           onPressed: authProvider.isLoading
                               ? null
                               : () async {
-                                  if (!_formKey.currentState!.validate())
+                                  if (!_formKey.currentState!.validate()) {
                                     return;
+                                  }
 
                                   final error = await authProvider.register(
                                     email: emailCtrl.text.trim(),
@@ -249,17 +272,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   }
 
                                   // ===== ROLE BASED NAVIGATION =====
-                                  final role = selectedUserType;
+                                  final role = selectedUserType?.toLowerCase();
 
                                   if (role == "staff") {
                                     Navigator.pushReplacementNamed(
-                                        context, AppRoutes.staffDashboard);
-                                  } else if (role == "manager") {
-                                    Navigator.pushReplacementNamed(
-                                        context, AppRoutes.managerDashboard);
+                                        context, AppRoutes.staffLogin);
                                   } else {
                                     Navigator.pushReplacementNamed(
-                                        context, AppRoutes.adminDashboard);
+                                        context, AppRoutes.login);
                                   }
                                 },
                         ),

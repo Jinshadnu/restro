@@ -1,6 +1,5 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppTheme {
   static const Color primaryColor = Color(0xFFD62128);
@@ -27,6 +26,7 @@ class AppTheme {
 
   static ThemeData get lightTheme {
     return ThemeData(
+        useMaterial3: true,
         primaryColor: primaryColor,
         scaffoldBackgroundColor: backGroundColor,
         colorScheme: const ColorScheme.light(
@@ -35,6 +35,15 @@ class AppTheme {
           tertiary: tertiaryColor,
           surface: surfaceColor,
           error: error,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: primaryColor,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
         ),
         fontFamily: 'Poppins',
         textTheme: const TextTheme(

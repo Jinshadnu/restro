@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:restro/data/models/task_model.dart';
-import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:restro/utils/theme/theme.dart';
 
 class AnimatedTaskAdmin extends StatefulWidget {

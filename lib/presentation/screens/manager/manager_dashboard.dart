@@ -16,6 +16,36 @@ class ManagerDashboard extends StatefulWidget {
 class _ManagerDashboardState extends State<ManagerDashboard> {
   int _currentIndex = 0;
 
+  final PageStorageBucket _bucket = PageStorageBucket();
+
+  static const _navDestinations = <NavigationDestination>[
+    NavigationDestination(
+      icon: Icon(Icons.home_outlined),
+      selectedIcon: Icon(Icons.home_rounded),
+      label: 'Home',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.assignment_outlined),
+      selectedIcon: Icon(Icons.assignment_rounded),
+      label: 'Assign',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.description_outlined),
+      selectedIcon: Icon(Icons.description_rounded),
+      label: 'SOP',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.verified_outlined),
+      selectedIcon: Icon(Icons.verified_rounded),
+      label: 'Verify',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.person_outline),
+      selectedIcon: Icon(Icons.person_rounded),
+      label: 'Profile',
+    ),
+  ];
+
   final List<Widget> _screens = [
     const ManagerHomeScreen(),
     const ManagerAssignTaskScreen(),
@@ -34,36 +64,75 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: AppTheme.primaryColor,
-        currentIndex: _currentIndex,
-        selectedItemColor: AppTheme.yellow,
-        unselectedItemColor: AppTheme.primaryLight,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
+      backgroundColor: AppTheme.backGroundColor,
+      body: SafeArea(
+        child: PageStorage(
+          bucket: _bucket,
+          child: IndexedStack(
+            index: _currentIndex,
+            children: _screens,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: "Assign",
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: NavigationBarTheme(
+                data: NavigationBarThemeData(
+                  backgroundColor: Colors.white,
+                  indicatorColor: AppTheme.primaryColor.withOpacity(0.12),
+                  labelTextStyle: WidgetStateProperty.resolveWith(
+                    (states) {
+                      final isSelected = states.contains(WidgetState.selected);
+                      return TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w600,
+                        color: isSelected
+                            ? AppTheme.primaryColor
+                            : AppTheme.textSecondary,
+                      );
+                    },
+                  ),
+                  iconTheme: WidgetStateProperty.resolveWith(
+                    (states) {
+                      final isSelected = states.contains(WidgetState.selected);
+                      return IconThemeData(
+                        size: 24,
+                        color: isSelected
+                            ? AppTheme.primaryColor
+                            : AppTheme.textSecondary,
+                      );
+                    },
+                  ),
+                ),
+                child: NavigationBar(
+                  selectedIndex: _currentIndex,
+                  height: 70,
+                  onDestinationSelected: (index) {
+                    setState(() => _currentIndex = index);
+                  },
+                  destinations: _navDestinations,
+                ),
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.description),
-            label: "SOP",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.verified_user),
-            label: "Verify",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Profile",
-          ),
-        ],
+        ),
       ),
     );
   }

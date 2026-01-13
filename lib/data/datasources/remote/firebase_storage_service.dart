@@ -7,9 +7,15 @@ class FirebaseStorageService {
   Future<String> uploadTaskPhoto(String taskId, File photo) async {
     try {
       final ref = _storage.ref().child('task_photos').child('$taskId.jpg');
-      await ref.putFile(photo);
-      return await ref.getDownloadURL();
+      final snapshot = await ref.putFile(photo);
+      return await snapshot.ref.getDownloadURL();
     } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('object-not-found')) {
+        throw Exception(
+          'Failed to upload photo: $e. This often happens when Firebase Storage rules block read access for getDownloadURL() or the upload path is incorrect.',
+        );
+      }
       throw Exception('Failed to upload photo: $e');
     }
   }
@@ -22,5 +28,16 @@ class FirebaseStorageService {
       throw Exception('Failed to delete photo: $e');
     }
   }
-}
 
+  Future<String> uploadAttendanceSelfie(
+      String userId, String date, File photo) async {
+    try {
+      final ref =
+          _storage.ref().child('attendance').child(userId).child('$date.jpg');
+      await ref.putFile(photo);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      throw Exception('Failed to upload attendance photo: $e');
+    }
+  }
+}

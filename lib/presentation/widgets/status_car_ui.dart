@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:restro/utils/theme/theme.dart';
 
 class StatusOverviewCard extends StatelessWidget {
   final int total;
@@ -19,8 +20,16 @@ class StatusOverviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white, // ✅ White card
+        gradient: LinearGradient(
+          colors: [
+            Colors.white,
+            AppTheme.primaryColor.withOpacity(0.06),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -29,24 +38,49 @@ class StatusOverviewCard extends StatelessWidget {
           ),
         ],
       ),
-
       child: Column(
         children: [
           Row(
             children: [
-              Expanded(child: _buildItem(Icons.list_alt, "Total", total, Colors.deepPurple)),
-              _verticalDivider(),
-              Expanded(child: _buildItem(Icons.timelapse, "Pending", pending, Colors.orange)),
+              Expanded(
+                child: _buildTile(
+                  icon: Icons.list_alt,
+                  title: 'Total',
+                  count: total,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTile(
+                  icon: Icons.timelapse,
+                  title: 'Pending',
+                  count: pending,
+                  color: AppTheme.warning,
+                ),
+              ),
             ],
           ),
-
-          _horizontalDivider(),
-
+          const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildItem(Icons.check_circle, "Completed", completed, Colors.green)),
-              _verticalDivider(),
-              Expanded(child: _buildItem(Icons.cancel, "Cancelled", cancelled, Colors.red)),
+              Expanded(
+                child: _buildTile(
+                  icon: Icons.check_circle,
+                  title: 'Completed',
+                  count: completed,
+                  color: AppTheme.success,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTile(
+                  icon: Icons.cancel,
+                  title: 'Cancelled',
+                  count: cancelled,
+                  color: AppTheme.error,
+                ),
+              ),
             ],
           ),
         ],
@@ -54,64 +88,66 @@ class StatusOverviewCard extends StatelessWidget {
     );
   }
 
-  // 🔹 Item UI
-  Widget _buildItem(IconData icon, String title, int count, Color color) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-
-        // Icon Box
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(icon, size: 26, color: color),
-        ),
-
-        const SizedBox(height: 4),
-
-        // Title
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.black.withOpacity(0.75),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-
-        // Count
-        Text(
-          "$count",
-          style: TextStyle(
-            fontSize: 18,
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        const SizedBox(height: 4),
-      ],
-    );
-  }
-
-  // 🔹 Vertical divider
-  Widget _verticalDivider() {
+  Widget _buildTile({
+    required IconData icon,
+    required String title,
+    required int count,
+    required Color color,
+  }) {
     return Container(
-      width: 2,
-      height: 70,
-      color: Colors.grey.withOpacity(0.2),
-    );
-  }
-
-  // 🔹 Horizontal divider
-  Widget _horizontalDivider() {
-    return Container(
-      height: 2,
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      color: Colors.grey.withOpacity(0.2),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, size: 22, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

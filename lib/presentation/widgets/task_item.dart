@@ -7,6 +7,7 @@ class AnimatedTaskItem extends StatefulWidget {
   final String? status;
   final Color statusColor;
   final int index; // <-- REQUIRED for staggered animation
+  final VoidCallback? onTap;
 
   const AnimatedTaskItem(
       {super.key,
@@ -15,7 +16,8 @@ class AnimatedTaskItem extends StatefulWidget {
       required this.person,
       required this.statusColor,
       required this.index,
-      this.status});
+      this.status,
+      this.onTap});
 
   @override
   State<AnimatedTaskItem> createState() => _AnimatedTaskItemState();
@@ -66,22 +68,7 @@ class _AnimatedTaskItemState extends State<AnimatedTaskItem>
       child: SlideTransition(
         position: _slide,
         child: GestureDetector(
-          onTap: () {
-            // final task = TaskModel(
-            //   title: widget.title,
-            //   time: widget.time,
-            //   assignedTo: widget.person,
-            //   statusColor: widget.statusColor,
-            //   priority: "Medium",   // add if your UI has priority
-            //   category: "General",  // modify as you need
-            // );
-
-            // Navigator.pushNamed(
-            //   context,
-            //   AppRoutes.taskDetails,
-            //   arguments: task,
-            // );
-          },
+          onTap: widget.onTap,
           child: Container(
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(16),
@@ -166,6 +153,25 @@ class _AnimatedTaskItemState extends State<AnimatedTaskItem>
             ),
           ),
         ),
+
+        // NOTE: Keeping the previous commented navigation block below as-is.
+        // (Do not delete comments per project rules.)
+        //
+        // onTap: () {
+        // final task = TaskModel(
+        //   title: widget.title,
+        //   time: widget.time,
+        //   assignedTo: widget.person,
+        //   statusColor: widget.statusColor,
+        //   priority: "Medium",   // add if your UI has priority
+        //   category: "General",  // modify as you need
+        // );
+
+        // Navigator.pushNamed(
+        //   context,
+        //   AppRoutes.taskDetails,
+        //   arguments: task,
+        // );
       ),
     );
   }

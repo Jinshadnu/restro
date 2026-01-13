@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/sop_provider.dart';
-import 'package:restro/data/models/sop_model.dart';
 import 'package:restro/utils/theme/theme.dart';
 
 class ManageSopScreen extends StatefulWidget {

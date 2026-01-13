@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
+import 'package:restro/data/datasources/remote/firestore_service.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -36,33 +37,70 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> navigateUser() async {
-    final auth = Provider.of<AuthenticationProvider>(context, listen: false);
+    try {
+      final auth = Provider.of<AuthenticationProvider>(context, listen: false);
 
-    await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 2));
 
-    bool loggedIn = await auth.loadSession();
+      bool loggedIn = await auth.loadSession();
 
-    if (!loggedIn) {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-      return;
-    }
-
-    // 🔥 Navigate based on Role
-    switch (auth.currentUser!.role) {
-      case "admin":
-        Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
-        break;
-
-      case "manager":
-        Navigator.pushReplacementNamed(context, AppRoutes.managerDashboard);
-        break;
-
-      case "staff":
-        Navigator.pushReplacementNamed(context, AppRoutes.staffDashboard);
-        break;
-
-      default:
+      if (!loggedIn) {
         Navigator.pushReplacementNamed(context, AppRoutes.login);
+        return;
+      }
+
+      // 🔥 Navigate based on Role
+      final role = auth.currentUser!.role.toString().toLowerCase();
+      switch (role) {
+        case "admin":
+          Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
+          break;
+
+        case "owner":
+          Navigator.pushReplacementNamed(context, AppRoutes.ownerDashboard);
+          break;
+
+        case "manager":
+          Navigator.pushReplacementNamed(context, AppRoutes.managerDashboard);
+          break;
+
+        case "staff":
+          // Check if attendance is already marked today
+          final now = DateTime.now();
+          if (now.hour < 14) {
+            Navigator.pushReplacementNamed(context, AppRoutes.staffDashboard);
+            break;
+          }
+
+          final firestoreService = FirestoreService();
+          final todayAttendance = await firestoreService.getTodayAttendance(
+            auth.currentUser!.id,
+          );
+
+          if (todayAttendance.docs.isEmpty) {
+            Navigator.pushReplacementNamed(context, AppRoutes.attendanceSelfie);
+            break;
+          }
+
+          final data =
+              todayAttendance.docs.first.data() as Map<String, dynamic>;
+          final status = (data['verification_status'] ?? data['status'] ?? '')
+              .toString()
+              .toLowerCase();
+          final isApproved = status == 'approved' || status == 'verified';
+
+          Navigator.pushReplacementNamed(
+            context,
+            isApproved ? AppRoutes.staffDashboard : AppRoutes.attendanceSelfie,
+          );
+          break;
+
+        default:
+          Navigator.pushReplacementNamed(context, AppRoutes.login);
+      }
+    } catch (e) {
+      // If an error occurs, navigate to the login screen
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
     }
   }
 

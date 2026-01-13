@@ -12,9 +12,10 @@ class AdminProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider =
         Provider.of<AuthenticationProvider>(context, listen: false);
+    final currentUser = authProvider.currentUser;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: AppTheme.backGroundColor,
       appBar: const CustomAppbar(title: "Admin Profile"),
       body: SingleChildScrollView(
         child: Column(
@@ -35,16 +36,18 @@ class AdminProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    "Admin User",
-                    style: TextStyle(
+                  Text(
+                    currentUser?.name ?? "Admin",
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    "Administrator",
+                    (currentUser != null && currentUser.role.isNotEmpty)
+                        ? currentUser.role
+                        : "admin",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.9),
                       fontSize: 14,
@@ -63,6 +66,7 @@ class AdminProfileScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.black.withOpacity(0.05)),
                 boxShadow: const [
                   BoxShadow(
                     color: Colors.black12,
@@ -82,9 +86,14 @@ class AdminProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _infoRow("Email", "admin@restro.com"),
-                  _infoRow("Phone", "+91 9876543210"),
-                  _infoRow("Branch", "Shawarmax Changaramkulam"),
+                  _infoRow("Email", currentUser?.email ?? "N/A"),
+                  _infoRow("Phone", currentUser?.phone ?? "N/A"),
+                  _infoRow(
+                    "Role",
+                    (currentUser != null && currentUser.role.isNotEmpty)
+                        ? currentUser.role
+                        : "admin",
+                  ),
                 ],
               ),
             ),
@@ -194,10 +203,11 @@ class AdminProfileScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title,
-              style: const TextStyle(color: Colors.black54, fontSize: 14)),
+              style:
+                  const TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
           Text(value,
               style: const TextStyle(
-                  color: Colors.black87,
+                  color: AppTheme.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w600)),
         ],
@@ -216,6 +226,7 @@ class AdminProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,

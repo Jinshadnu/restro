@@ -10,8 +10,11 @@ class StaffProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthenticationProvider>(context);
+    final currentUser = auth.currentUser;
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: AppTheme.backGroundColor,
       appBar: const CustomAppbar(title: "My Profile"),
       body: SingleChildScrollView(
         child: Column(
@@ -36,9 +39,9 @@ class StaffProfileScreen extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   // Staff Name
-                  const Text(
-                    "Jinshad Nu",
-                    style: TextStyle(
+                  Text(
+                    currentUser?.name ?? "Staff",
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -47,7 +50,9 @@ class StaffProfileScreen extends StatelessWidget {
 
                   // Staff Role
                   Text(
-                    "Staff Member",
+                    (currentUser != null && currentUser.role.isNotEmpty)
+                        ? currentUser.role
+                        : "Staff",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.9),
                       fontSize: 14,
@@ -85,9 +90,14 @@ class StaffProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _infoRow("Email", "staff@gmail.com"),
-                  _infoRow("Phone", "+91 9876543210"),
-                  _infoRow("Branch", "Shawarmax Changaramkulam"),
+                  _infoRow("Email", currentUser?.email ?? "N/A"),
+                  _infoRow("Phone", currentUser?.phone ?? "N/A"),
+                  _infoRow(
+                    "Role",
+                    (currentUser != null && currentUser.role.isNotEmpty)
+                        ? currentUser.role
+                        : "staff",
+                  ),
                 ],
               ),
             ),
@@ -182,15 +192,12 @@ class StaffProfileScreen extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
           Text(
             value,
             style: const TextStyle(
-              color: Colors.black87,
+              color: AppTheme.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -210,6 +217,7 @@ class StaffProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,

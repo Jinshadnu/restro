@@ -10,6 +10,8 @@ class TaskModel extends TaskEntity {
     required super.assignedBy,
     required super.status,
     required super.frequency,
+    super.plannedStartAt,
+    super.plannedEndAt,
     super.dueDate,
     super.completedAt,
     super.photoUrl,
@@ -17,6 +19,8 @@ class TaskModel extends TaskEntity {
     required super.createdAt,
     super.verifiedAt,
     super.requiresPhoto = false,
+    super.isLate = false,
+    super.reward,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +34,8 @@ class TaskModel extends TaskEntity {
       assignedBy: json['assignedBy'] ?? '',
       status: _statusFromString(json['status'] ?? 'pending'),
       frequency: _frequencyFromString(json['frequency'] ?? 'daily'),
+      plannedStartAt: _parseDateTime(json['plannedStartAt']),
+      plannedEndAt: _parseDateTime(json['plannedEndAt']),
       dueDate: _parseDateTime(json['dueDate']),
       completedAt: _parseDateTime(json['completedAt']),
       photoUrl: json['photoUrl'],
@@ -39,7 +45,21 @@ class TaskModel extends TaskEntity {
       requiresPhoto: json['requiresPhoto'] == true ||
           (json['requiresPhoto'] is String &&
               (json['requiresPhoto'] as String).toLowerCase() == 'true'),
+      isLate: json['isLate'] == true ||
+          (json['isLate'] is String &&
+              (json['isLate'] as String).toLowerCase() == 'true'),
+      reward: _parseNum(json['reward'])?.toDouble() ??
+          50.0, // Default to 50 if not specified
     );
+  }
+
+  static num? _parseNum(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value;
+    if (value is String) {
+      return num.tryParse(value.trim());
+    }
+    return null;
   }
 
   /// Parse DateTime from Firestore Timestamp, DateTime, or String
@@ -94,6 +114,8 @@ class TaskModel extends TaskEntity {
       'assignedBy': assignedBy,
       'status': status.toString().split('.').last,
       'frequency': frequency.toString().split('.').last,
+      'plannedStartAt': plannedStartAt?.toIso8601String(),
+      'plannedEndAt': plannedEndAt?.toIso8601String(),
       'dueDate': dueDate?.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'photoUrl': photoUrl,
@@ -101,6 +123,8 @@ class TaskModel extends TaskEntity {
       'createdAt': createdAt.toIso8601String(),
       'verifiedAt': verifiedAt?.toIso8601String(),
       'requiresPhoto': requiresPhoto,
+      'isLate': isLate,
+      'reward': reward,
     };
   }
 
@@ -127,6 +151,8 @@ class TaskModel extends TaskEntity {
       assignedBy: entity.assignedBy,
       status: entity.status,
       frequency: entity.frequency,
+      plannedStartAt: entity.plannedStartAt,
+      plannedEndAt: entity.plannedEndAt,
       dueDate: entity.dueDate,
       completedAt: entity.completedAt,
       photoUrl: entity.photoUrl,
@@ -134,6 +160,8 @@ class TaskModel extends TaskEntity {
       createdAt: entity.createdAt,
       verifiedAt: entity.verifiedAt,
       requiresPhoto: entity.requiresPhoto,
+      isLate: entity.isLate,
+      reward: entity.reward,
     );
   }
 }

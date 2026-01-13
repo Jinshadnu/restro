@@ -10,9 +10,13 @@ abstract class AuthRepository {
   });
 
   Future<UserEntity> login({
-    required String email,
+    required String identifier,
     required String password,
   });
 
+  Future<UserEntity> loginWithPin(String pin);
+
   Future<void> logout();
+
+  Future<void> updateUserVerification(String uid);
 }

@@ -16,6 +16,35 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
   final List<Widget> _screens = [];
+  final PageStorageBucket _bucket = PageStorageBucket();
+
+  static const _navDestinations = <NavigationDestination>[
+    NavigationDestination(
+      icon: Icon(Icons.home_outlined),
+      selectedIcon: Icon(Icons.home_rounded),
+      label: 'Home',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.task_outlined),
+      selectedIcon: Icon(Icons.task_rounded),
+      label: 'Tasks',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.menu_book_outlined),
+      selectedIcon: Icon(Icons.menu_book_rounded),
+      label: 'SOP',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.done_all_outlined),
+      selectedIcon: Icon(Icons.done_all_rounded),
+      label: 'Completed',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.person_outline),
+      selectedIcon: Icon(Icons.person_rounded),
+      label: 'Profile',
+    ),
+  ];
 
   @override
   void initState() {
@@ -33,25 +62,76 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: AppTheme.primaryColor,
-          // 🔴 Red (your logo color)
-          currentIndex: _currentIndex,
-          selectedItemColor: AppTheme.yellow,
-          // Selected item white
-          unselectedItemColor: AppTheme.primaryLight,
-          // Slightly dimmed white for others
-          type: BottomNavigationBarType.fixed,
-          // Important to show background color
-          onTap: (index) => setState(() => _currentIndex = index),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.task), label: "Tasks"),
-            BottomNavigationBarItem(icon: Icon(Icons.task), label: "SOP"),
-            BottomNavigationBarItem(icon: Icon(Icons.done), label: "Completed"),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-          ]),
+      backgroundColor: AppTheme.backGroundColor,
+      body: SafeArea(
+        child: PageStorage(
+          bucket: _bucket,
+          child: IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: NavigationBarTheme(
+                data: NavigationBarThemeData(
+                  backgroundColor: Colors.white,
+                  indicatorColor: AppTheme.primaryColor.withOpacity(0.12),
+                  labelTextStyle: WidgetStateProperty.resolveWith(
+                    (states) {
+                      final isSelected = states.contains(WidgetState.selected);
+                      return TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w600,
+                        color: isSelected
+                            ? AppTheme.primaryColor
+                            : AppTheme.textSecondary,
+                      );
+                    },
+                  ),
+                  iconTheme: WidgetStateProperty.resolveWith(
+                    (states) {
+                      final isSelected = states.contains(WidgetState.selected);
+                      return IconThemeData(
+                        size: 24,
+                        color: isSelected
+                            ? AppTheme.primaryColor
+                            : AppTheme.textSecondary,
+                      );
+                    },
+                  ),
+                ),
+                child: NavigationBar(
+                  selectedIndex: _currentIndex,
+                  height: 70,
+                  onDestinationSelected: (index) {
+                    setState(() => _currentIndex = index);
+                  },
+                  destinations: _navDestinations,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

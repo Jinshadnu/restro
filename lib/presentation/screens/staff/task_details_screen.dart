@@ -1,9 +1,16 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:restro/data/models/task_model.dart';
 import 'package:restro/data/models/sop_model.dart';
 import 'package:restro/data/datasources/remote/firestore_service.dart';
+import 'package:restro/domain/entities/task_entity.dart';
+import 'package:restro/presentation/providers/task_provider.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:restro/utils/theme/theme.dart';
+import 'package:intl/intl.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
   final TaskModel task;
@@ -16,8 +23,20 @@ class TaskDetailsScreen extends StatefulWidget {
 
 class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final ImagePicker _imagePicker = ImagePicker();
   SOPModel? _sop;
   bool _isLoadingSOP = true;
+  bool _isSubmitting = false;
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Not set';
+    return DateFormat('MMM d, y').format(date);
+  }
+
+  String _formatDateTime(DateTime? date) {
+    if (date == null) return 'Not set';
+    return DateFormat('MMM d, y • h:mm a').format(date);
+  }
 
   @override
   void initState() {
@@ -51,308 +70,298 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String _formatDate(DateTime? date) {
-      if (date == null) return 'Not set';
-      return "${date.day}/${date.month}/${date.year}";
-    }
+    final bool isCompletedState = widget.task.status == TaskStatus.completed ||
+        widget.task.status == TaskStatus.approved;
+
+    final DateTime? lateCutoff =
+        widget.task.plannedEndAt ?? widget.task.dueDate;
+
+    final bool isLateComputed = !isCompletedState &&
+        lateCutoff != null &&
+        DateTime.now().isAfter(lateCutoff);
+
+    final bool showLate = widget.task.isLate || isLateComputed;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Task Details',
-          style: TextStyle(color: AppTheme.kAccentColor),
+          style: TextStyle(color: Colors.white),
         ),
         backgroundColor: AppTheme.primaryColor,
       ),
-      body: Stack(
-        children: [
-          /// --- TOP IMAGE ---
-          SizedBox(
-            height: 350,
-            width: double.infinity,
-            child: Image.asset(
-              "assets/images/clean_kitchen.jpg",
-              fit: BoxFit.cover,
-            ),
-          ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// Title
+              Text(
+                widget.task.title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
 
-          /// --- SLIDING DETAILS CONTAINER ---
-          DraggableScrollableSheet(
-            initialChildSize: 0.55,
-            minChildSize: 0.55,
-            maxChildSize: 0.95,
-            builder: (context, scrollController) {
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(28),
-                    topRight: Radius.circular(28),
+              const SizedBox(height: 12),
+
+              /// Meta chips
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children: [
+                  _chip(
+                    icon: Icons.flag,
+                    label: widget.task.status.toString().split('.').last,
+                    color:
+                        _getStatusColor(widget.task.status).withOpacity(0.12),
+                    textColor: _getStatusColor(widget.task.status),
                   ),
+                  if (showLate)
+                    _chip(
+                      icon: Icons.access_time,
+                      label: 'LATE',
+                      color: Colors.red.shade50,
+                      textColor: Colors.red.shade800,
+                    ),
+                  _chip(
+                    icon: Icons.repeat,
+                    label:
+                        "Frequency: ${widget.task.frequency.toString().split('.').last}",
+                    color: Colors.blue.shade50,
+                    textColor: Colors.blue.shade900,
+                  ),
+                  _chip(
+                    icon: Icons.photo_camera_back_outlined,
+                    label:
+                        "Photo required: ${_sop?.requiresPhoto == true ? 'Yes' : 'No'}",
+                    color: Colors.orange.shade50,
+                    textColor: Colors.orange.shade900,
+                  ),
+                  if (_sop != null)
+                    _chip(
+                      icon: Icons.rule,
+                      label: "SOP: ${_sop!.title}",
+                      color: Colors.purple.shade50,
+                      textColor: Colors.purple.shade900,
+                    ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              /// Timing card
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.black.withOpacity(0.06)),
                   boxShadow: [
-                    BoxShadow(color: Colors.black12, blurRadius: 8),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
                   ],
                 ),
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      /// Title
-                      Text(
-                        widget.task.title,
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Timing',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    _infoTile(
+                      icon: Icons.schedule,
+                      title: 'Planned Start',
+                      value: _formatDateTime(widget.task.plannedStartAt),
+                    ),
+                    const SizedBox(height: 10),
+                    _infoTile(
+                      icon: Icons.flag_outlined,
+                      title: 'Planned End',
+                      value: _formatDateTime(widget.task.plannedEndAt),
+                    ),
+                    const SizedBox(height: 10),
+                    _infoTile(
+                      icon: Icons.calendar_today,
+                      title: 'Due Date',
+                      value: _formatDate(widget.task.dueDate),
+                    ),
+                    const SizedBox(height: 10),
+                    _infoTile(
+                      icon: Icons.date_range,
+                      title: 'Created',
+                      value: _formatDate(widget.task.createdAt),
+                    ),
+                  ],
+                ),
+              ),
 
-                      const SizedBox(height: 8),
+              const SizedBox(height: 18),
 
-                      /// Category + Priority Chip Row
-                      const Row(
-                        children: [
-                          // Chip(
-                          //   label: Text(task.category),
-                          //   backgroundColor: Colors.blue.shade50,
-                          // ),
-                          SizedBox(width: 10),
-                          // Chip(
-                          //   label: Text("Priority: ${task.priority}"),
-                          //   backgroundColor: Colors.red.shade50,
-                          // ),
-                        ],
+              /// Description
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.black.withOpacity(0.06)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Task Description',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
                       ),
-
-                      const SizedBox(height: 10),
-
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 8,
-                        children: [
-                          _chip(
-                            icon: Icons.repeat,
-                            label:
-                                "Frequency: ${widget.task.frequency.toString().split('.').last}",
-                            color: Colors.blue.shade50,
-                            textColor: Colors.blue.shade900,
-                          ),
-                          _chip(
-                            icon: Icons.date_range,
-                            label:
-                                "Created: ${_formatDate(widget.task.createdAt)}",
-                            color: Colors.green.shade50,
-                            textColor: Colors.green.shade900,
-                          ),
-                          if (_sop != null)
-                            _chip(
-                              icon: Icons.rule,
-                              label: "SOP: ${_sop!.title}",
-                              color: Colors.purple.shade50,
-                              textColor: Colors.purple.shade900,
-                            ),
-                          _chip(
-                            icon: Icons.photo_camera_back_outlined,
-                            label:
-                                "Photo required: ${_sop?.requiresPhoto == true ? 'Yes' : 'No'}",
-                            color: Colors.orange.shade50,
-                            textColor: Colors.orange.shade900,
-                          ),
-                        ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.task.description.isNotEmpty
+                          ? widget.task.description
+                          : 'No description available.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.4,
+                        color: AppTheme.textSecondary,
                       ),
+                    ),
+                  ],
+                ),
+              ),
 
-                      const SizedBox(height: 15),
-
-                      // /// Assigned To
-                      // _infoTile(
-                      //   icon: Icons.person,
-                      //   title: "Assigned To",
-                      //   value: widget.task.assignedTo,
-                      // ),
-
-                      // const SizedBox(height: 10),
-
-                      // /// Assigned By
-                      // _infoTile(
-                      //   icon: Icons.badge_outlined,
-                      //   title: "Assigned By",
-                      //   value: widget.task.assignedBy,
-                      // ),
-
-                      // const SizedBox(height: 10),
-
-                      /// Due Date
-                      if (widget.task.dueDate != null)
-                        _infoTile(
-                          icon: Icons.calendar_today,
-                          title: "Due Date",
-                          value:
-                              "${widget.task.dueDate!.day}/${widget.task.dueDate!.month}/${widget.task.dueDate!.year}",
-                        ),
-
-                      if (widget.task.dueDate != null)
-                        const SizedBox(height: 10),
-
-                      /// Status
-                      _infoTile(
-                        icon: Icons.flag,
-                        title: "Status",
-                        value: widget.task.status.toString().split('.').last,
-                        color: _getStatusColor(widget.task.status),
-                      ),
-
-                      const SizedBox(height: 25),
-
-                      /// Description
-                      const Text(
-                        "Task Description",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.task.description.isNotEmpty
-                            ? widget.task.description
-                            : "No description available.",
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-
-                      /// SOP Steps Section
-                      if (_isLoadingSOP)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else if (_sop != null && _sop!.steps.isNotEmpty) ...[
-                        const SizedBox(height: 25),
-                        const Text(
-                          "SOP Steps",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ..._sop!.steps.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final step = entry.value;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '${index + 1}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    step,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.grey.shade800,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ],
-
-                      const SizedBox(height: 40),
-
-                      /// --- ACTION BUTTONS ---
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.pushReplacementNamed(
-                                    context, AppRoutes.startTask,
-                                    arguments: widget.task);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 15),
-                                backgroundColor: AppTheme.primaryColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: const Text(
-                                "Start Task",
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                          // const SizedBox(width: 15),
-                          // Expanded(
-                          //   child: ElevatedButton(
-                          //     onPressed: () {},
-                          //     style: ElevatedButton.styleFrom(
-                          //       padding:
-                          //           const EdgeInsets.symmetric(vertical: 15),
-                          //       backgroundColor: Colors.green,
-                          //       shape: RoundedRectangleBorder(
-                          //         borderRadius: BorderRadius.circular(14),
-                          //       ),
-                          //     ),
-                          //     child: const Text(
-                          //       "Complete Task",
-                          //       style: TextStyle(
-                          //           fontSize: 16, color: Colors.white),
-                          //     ),
-                          //   ),
-                          // ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 50),
-                    ],
+              /// SOP Steps Section
+              if (_isLoadingSOP)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_sop != null && _sop!.steps.isNotEmpty) ...[
+                const SizedBox(height: 25),
+                const Text(
+                  "SOP Steps",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              );
-            },
-          ),
+                const SizedBox(height: 12),
+                ..._sop!.steps.asMap().entries.map((entry) {
+                  final step = entry.value;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.check_box_outline_blank,
+                          color: Colors.grey.shade400,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            step,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey.shade800,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
 
-          /// --- BACK BUTTON ---
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
+              const SizedBox(height: 40),
+
+              /// --- ACTION BUTTONS ---
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(
+                            context, AppRoutes.startTask,
+                            arguments: widget.task);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        backgroundColor: AppTheme.primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        "Start Task",
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  // Camera button for quick submission
+                  if (widget.task.status == TaskStatus.pending ||
+                      widget.task.status == TaskStatus.inProgress)
+                    ElevatedButton(
+                      onPressed:
+                          _isSubmitting ? null : _handleQuickCameraSubmit,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 15, horizontal: 20),
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                            ),
+                    ),
+                ],
               ),
-            ),
+
+              const SizedBox(height: 50),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -426,6 +435,68 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         return Colors.red;
       default:
         return Colors.grey;
+    }
+  }
+
+  Future<void> _handleQuickCameraSubmit() async {
+    try {
+      // Request camera permission
+      final cameraStatus = await Permission.camera.request();
+      if (!cameraStatus.isGranted) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Camera permission is required to submit task'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Capture photo
+      final XFile? photo = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
+      if (photo == null) {
+        // User cancelled camera
+        return;
+      }
+
+      setState(() {
+        _isSubmitting = true;
+      });
+
+      final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+      await taskProvider.completeTask(
+        widget.task.id,
+        photo: File(photo.path),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task submitted successfully with photo'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to submit task: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

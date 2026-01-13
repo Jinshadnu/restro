@@ -29,166 +29,195 @@ class _AddSopScreenState extends State<AddSopScreen> {
   final List<String> frequencies = ["Daily", "Weekly", "Monthly"];
 
   @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    _stepsCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F4),
+      backgroundColor: AppTheme.backGroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
         elevation: 0,
-        title: const Text("Add SOP", style: TextStyle(color: Colors.white)),
+        title:
+            const Text("Add Checklist", style: TextStyle(color: Colors.white)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Check List Details',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.black.withOpacity(0.05)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // SOP TITLE
+                    CustomeTextField(
+                      label: "Checklist Title",
+                      controller: _titleCtrl,
+                      prefixICon: Icons.article_outlined,
+                      validator: (v) =>
+                          v!.isEmpty ? "Enter checklist title" : null,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // DESCRIPTION
+                    CustomeTextField(
+                      label: "Description",
+                      controller: _descCtrl,
+                      maxLine: 4,
+                      prefixICon: Icons.description_outlined,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // STEPS
+                    CustomeTextField(
+                      label: "Checklist Items (one per line)",
+                      controller: _stepsCtrl,
+                      maxLine: 6,
+                      prefixICon: Icons.format_list_bulleted_outlined,
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? "Enter steps" : null,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // FREQUENCY DROPDOWN
+                    _buildDropdown(
+                      label: "Frequency",
+                      items: frequencies,
+                      value: _frequency,
+                      onChange: (v) => setState(() => _frequency = v),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // PHOTO EVIDENCE SWITCH
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: Colors.black.withOpacity(0.12)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          )
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Photo Evidence Required",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Switch(
+                            value: _requireEvidence,
+                            activeColor: AppTheme.primaryColor,
+                            onChanged: (v) =>
+                                setState(() => _requireEvidence = v),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // SUBMIT BUTTON
+                    Consumer<SopProvider>(
+                      builder: (context, provider, _) {
+                        return GradientButton(
+                          text: "Save SOP",
+                          isLoading: provider.isLoading,
+                          onPressed: provider.isLoading
+                              ? null
+                              : () async {
+                                  if (!_formKey.currentState!.validate())
+                                    return;
+                                  if (_frequency == null) return;
+
+                                  final steps = _stepsCtrl.text
+                                      .trim()
+                                      .split('\n')
+                                      .where((s) => s.trim().isNotEmpty)
+                                      .toList();
+
+                                  final sop = SOPModel(
+                                    id: _uuid.v4(),
+                                    title: _titleCtrl.text.trim(),
+                                    description: _descCtrl.text.trim(),
+                                    steps: steps,
+                                    frequency: _frequency!.toLowerCase() ==
+                                            'daily'
+                                        ? TaskFrequency.daily
+                                        : _frequency!.toLowerCase() == 'weekly'
+                                            ? TaskFrequency.weekly
+                                            : TaskFrequency.monthly,
+                                    requiresPhoto: _requireEvidence,
+                                    createdAt: DateTime.now(),
+                                  );
+
+                                  await provider.addSop(sop);
+
+                                  if (!context.mounted) return;
+
+                                  if (provider.errorMessage.isNotEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(provider.errorMessage)),
+                                    );
+                                    return;
+                                  }
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            "Checklist Added Successfully!")),
+                                  );
+                                  Navigator.pop(context);
+                                },
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Create New SOP",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // SOP TITLE
-                CustomeTextField(
-                  label: "SOP Title",
-                  controller: _titleCtrl,
-                  prefixICon: Icons.article_outlined,
-                  validator: (v) => v!.isEmpty ? "Enter SOP title" : null,
-                ),
-
-                const SizedBox(height: 12),
-
-                // DESCRIPTION
-                CustomeTextField(
-                  label: "Description",
-                  controller: _descCtrl,
-                  maxLine: 4,
-                  prefixICon: Icons.description_outlined,
-                ),
-
-                const SizedBox(height: 16),
-
-                // STEPS
-                CustomeTextField(
-                  label: "Description",
-                  controller: _descCtrl,
-                  maxLine: 4,
-                  prefixICon: Icons.description_outlined,
-                ),
-
-                const SizedBox(height: 16),
-
-                // FREQUENCY DROPDOWN
-                _buildDropdown(
-                  label: "Frequency",
-                  items: frequencies,
-                  value: _frequency,
-                  onChange: (v) => setState(() => _frequency = v),
-                ),
-
-                const SizedBox(height: 16),
-
-                // PHOTO EVIDENCE SWITCH
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade300),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      )
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Photo Evidence Required",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Switch(
-                        value: _requireEvidence,
-                        activeColor: AppTheme.primaryColor,
-                        onChanged: (v) => setState(() => _requireEvidence = v),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 25),
-
-                // SUBMIT BUTTON
-                GradientButton(
-                  text: "Save SOP",
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate() &&
-                        _frequency != null) {
-                      final provider =
-                          Provider.of<SopProvider>(context, listen: false);
-
-                      // Parse steps from description (split by newline)
-                      final steps = _stepsCtrl.text.trim().isEmpty
-                          ? [_descCtrl.text.trim()]
-                          : _stepsCtrl.text
-                              .trim()
-                              .split('\n')
-                              .where((s) => s.trim().isNotEmpty)
-                              .toList();
-
-                      final sop = SOPModel(
-                        id: _uuid.v4(),
-                        title: _titleCtrl.text.trim(),
-                        description: _descCtrl.text.trim(),
-                        steps: steps,
-                        frequency: _frequency!.toLowerCase() == 'daily'
-                            ? TaskFrequency.daily
-                            : _frequency!.toLowerCase() == 'weekly'
-                                ? TaskFrequency.weekly
-                                : TaskFrequency.monthly,
-                        requiresPhoto: _requireEvidence,
-                        createdAt: DateTime.now(),
-                      );
-
-                      await provider.addSop(sop);
-
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text("SOP Added Successfully!")),
-                        );
-
-                        Navigator.pop(context);
-                      }
-                    }
-                  },
-                ),
-              ],
-            ),
           ),
         ),
       ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:restro/presentation/providers/auth_provider.dart';
 import 'package:restro/presentation/providers/admin_dashboard_provider.dart';
 import 'package:restro/presentation/widgets/custom_appbar.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
@@ -31,8 +30,6 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthenticationProvider>(context, listen: false);
-
     return Scaffold(
       appBar: const CustomAppbar(title: 'Owner Dashboard'),
       body: Container(
@@ -85,19 +82,12 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Hi, ${auth.currentUser?.name ?? 'Owner'} 👋",
+                              DateFormat('EEEE, MMMM d, yyyy')
+                                  .format(DateTime.now()),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              DateFormat('EEEE, MMMM d').format(DateTime.now()),
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
@@ -276,7 +266,7 @@ class _OverallTaskGraph extends StatelessWidget {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
         final tasks = snapshot.data ?? [];
-        final total = tasks.length == 0 ? 1 : tasks.length;
+        final total = tasks.isEmpty ? 1 : tasks.length;
 
         int completed =
             tasks.where((t) => t.status == TaskStatus.approved).length;
@@ -336,11 +326,23 @@ class _StaffPerformanceGraph extends StatelessWidget {
         final maxVal = staffCompleted.values.isEmpty
             ? 1
             : staffCompleted.values.reduce((a, b) => a > b ? a : b);
-        final items = staffCompleted.entries
-            .map((e) => _BarData(
-                e.key, e.value / maxVal, AppTheme.primaryColor, e.value))
-            .toList();
-        return _barCard(items, showLabel: true);
+
+        return FutureBuilder<Map<String, String>>(
+          future: firestoreService.getUserIdNameMap(),
+          builder: (context, userSnap) {
+            final userMap = userSnap.data ?? const <String, String>{};
+            final items = staffCompleted.entries.map((e) {
+              final label = userMap[e.key] ?? e.key;
+              return _BarData(
+                label,
+                e.value / maxVal,
+                AppTheme.primaryColor,
+                e.value,
+              );
+            }).toList();
+            return _barCard(items, showLabel: true);
+          },
+        );
       },
     );
   }

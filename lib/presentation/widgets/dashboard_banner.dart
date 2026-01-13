@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:restro/utils/theme/theme.dart';
 
 class DashboardBanner extends StatelessWidget {
-  final String staffName;
-
-  const DashboardBanner({super.key, required this.staffName});
+  const DashboardBanner({super.key});
 
   @override
   Widget build(BuildContext context) {

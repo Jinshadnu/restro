@@ -18,6 +18,8 @@ class TaskEntity {
   final String assignedBy; // Manager ID
   final TaskStatus status;
   final TaskFrequency frequency;
+  final DateTime? plannedStartAt;
+  final DateTime? plannedEndAt;
   final DateTime? dueDate;
   final DateTime? completedAt;
   final String? photoUrl;
@@ -25,6 +27,8 @@ class TaskEntity {
   final DateTime createdAt;
   final DateTime? verifiedAt;
   final bool requiresPhoto;
+  final bool isLate;
+  final double? reward;
 
   TaskEntity({
     required this.id,
@@ -35,6 +39,8 @@ class TaskEntity {
     required this.assignedBy,
     required this.status,
     required this.frequency,
+    this.plannedStartAt,
+    this.plannedEndAt,
     this.dueDate,
     this.completedAt,
     this.photoUrl,
@@ -42,5 +48,7 @@ class TaskEntity {
     required this.createdAt,
     this.verifiedAt,
     this.requiresPhoto = false,
+    this.isLate = false,
+    this.reward,
   });
 }

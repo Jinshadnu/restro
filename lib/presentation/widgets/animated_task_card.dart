@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:restro/data/models/task_model.dart';
+import 'package:restro/domain/entities/task_entity.dart';
 import 'package:restro/utils/theme/theme.dart';
 
 class AnimatedTaskCard extends StatefulWidget {
@@ -70,20 +72,38 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
     }
   }
 
-  Color getPriorityColor(String priority) {
-    switch (priority) {
-      case "High":
-        return AppTheme.primaryRed;
-      case "Medium":
+  bool get _isFuture {
+    if (widget.task.dueDate == null) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final taskDate = DateTime(widget.task.dueDate!.year,
+        widget.task.dueDate!.month, widget.task.dueDate!.day);
+    return taskDate.isAfter(today);
+  }
+
+  Color get _statusColor {
+    if (_isFuture) return Colors.grey;
+
+    switch (widget.task.status) {
+      case TaskStatus.pending:
         return Colors.orange;
-      default:
+      case TaskStatus.inProgress:
+        return Colors.blue;
+      case TaskStatus.verificationPending:
+        return Colors.purple;
+      case TaskStatus.completed:
+      case TaskStatus.approved:
         return Colors.green;
+      case TaskStatus.rejected:
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // final priorityColor = getPriorityColor(widget.task.priority);
+    final statusColor = _statusColor;
 
     return FadeTransition(
       opacity: _fade,
@@ -96,14 +116,14 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
           /// LEFT COLOR BORDER ADDED
           /// ***********************
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _isFuture ? Colors.grey.shade50 : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            // border: Border(
-            //   left: BorderSide(
-            //     color: priorityColor,
-            //     width: 6,
-            //   ),
-            // ),
+            border: Border(
+              left: BorderSide(
+                color: statusColor,
+                width: 6,
+              ),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.06),
@@ -126,17 +146,23 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.primaryColor,
-                          AppTheme.primaryColor.withOpacity(0.6),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      gradient: _isFuture
+                          ? LinearGradient(colors: [
+                              Colors.grey.shade400,
+                              Colors.grey.shade600
+                            ])
+                          : LinearGradient(
+                              colors: [
+                                AppTheme.primaryColor,
+                                AppTheme.primaryColor.withOpacity(0.6),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.task_alt, color: Colors.white),
+                    child: Icon(_isFuture ? Icons.lock_outline : Icons.task_alt,
+                        color: Colors.white),
                   ),
 
                   const SizedBox(width: 16),
@@ -148,10 +174,12 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
                       children: [
                         Text(
                           widget.task.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
-                            color: Colors.black87,
+                            color: _isFuture
+                                ? Colors.grey.shade600
+                                : Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -179,6 +207,15 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
                               color: Colors.blue.shade50,
                               textColor: Colors.blue.shade800,
                             ),
+                            if (widget.task.plannedStartAt != null &&
+                                widget.task.plannedEndAt != null)
+                              _chip(
+                                icon: Icons.schedule,
+                                label:
+                                    "${_formatDateTime(widget.task.plannedStartAt!)} - ${DateFormat('h:mm a').format(widget.task.plannedEndAt!)}",
+                                color: Colors.teal.shade50,
+                                textColor: Colors.teal.shade800,
+                              ),
                             _chip(
                               icon: Icons.repeat,
                               label: widget.task.frequency
@@ -189,12 +226,43 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
                               textColor: Colors.purple.shade800,
                             ),
                             _chip(
-                              icon: Icons.flag,
-                              label:
-                                  widget.task.status.toString().split('.').last,
-                              color: Colors.orange.shade50,
-                              textColor: Colors.orange.shade800,
+                              icon: _isFuture ? Icons.lock_clock : Icons.flag,
+                              label: _isFuture
+                                  ? "Future"
+                                  : widget.task.status
+                                      .toString()
+                                      .split('.')
+                                      .last,
+                              color: statusColor.withOpacity(0.1),
+                              textColor: statusColor,
                             ),
+                            if (widget.task.isLate)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: Colors.red.shade300, width: 1),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.access_time,
+                                        size: 14, color: Colors.red.shade700),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'LATE',
+                                      style: TextStyle(
+                                        color: Colors.red.shade700,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
                       ],
@@ -270,6 +338,10 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
 
   String _formatDate(DateTime date) {
     return "${date.day}/${date.month}/${date.year}";
+  }
+
+  String _formatDateTime(DateTime date) {
+    return DateFormat('MMM d, h:mm a').format(date);
   }
 
   Widget _chip(

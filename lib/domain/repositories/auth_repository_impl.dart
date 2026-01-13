@@ -10,12 +10,18 @@ class AuthRepositoryImpl extends AuthRepository {
 
   @override
   Future<UserEntity> login({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
-    final AppUserModel model =
-    await remoteDataSource.loginUser(email: email, password: password);
+    final AppUserModel model = await remoteDataSource.loginUser(
+        identifier: identifier, password: password);
 
+    return model.toEntity();
+  }
+
+  @override
+  Future<UserEntity> loginWithPin(String pin) async {
+    final AppUserModel model = await remoteDataSource.loginWithPin(pin);
     return model.toEntity();
   }
 
@@ -34,12 +40,17 @@ class AuthRepositoryImpl extends AuthRepository {
   }) async {
     final AppUserModel model = await remoteDataSource.registerUser(
       email: email,
-      password: password,
       name: name,
-      phone: phone,
+      password: password,
       role: role,
+      phone: phone,
     );
 
     return model.toEntity();
+  }
+
+  @override
+  Future<void> updateUserVerification(String uid) async {
+    await remoteDataSource.updateUserVerification(uid);
   }
 }

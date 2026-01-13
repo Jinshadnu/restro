@@ -22,8 +22,37 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS attendance (
+              id TEXT PRIMARY KEY,
+              userId TEXT NOT NULL,
+              staff_id TEXT,
+              date TEXT,
+              dateStr TEXT,
+              timestamp TEXT,
+              capturedAt TEXT,
+              imageUrl TEXT,
+              local_image_path TEXT,
+              status TEXT,
+              verification_status TEXT,
+              verifiedBy TEXT,
+              verifiedAt TEXT,
+              rejectionReason TEXT,
+              sync_status TEXT,
+              synced INTEGER NOT NULL DEFAULT 0
+            )
+          ''');
+
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_attendance_user_dateStr ON attendance(userId, dateStr)');
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_attendance_synced ON attendance(synced)');
+        }
+      },
     );
   }
 
@@ -83,6 +112,32 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_tasks_status ON tasks(status)');
     await db.execute('CREATE INDEX idx_tasks_synced ON tasks(synced)');
     await db.execute('CREATE INDEX idx_tasks_assignedBy ON tasks(assignedBy)');
+
+    await db.execute('''
+      CREATE TABLE attendance (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        staff_id TEXT,
+        date TEXT,
+        dateStr TEXT,
+        timestamp TEXT,
+        capturedAt TEXT,
+        imageUrl TEXT,
+        local_image_path TEXT,
+        status TEXT,
+        verification_status TEXT,
+        verifiedBy TEXT,
+        verifiedAt TEXT,
+        rejectionReason TEXT,
+        sync_status TEXT,
+        synced INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute(
+        'CREATE INDEX idx_attendance_user_dateStr ON attendance(userId, dateStr)');
+    await db
+        .execute('CREATE INDEX idx_attendance_synced ON attendance(synced)');
   }
 
   // User operations
@@ -99,6 +154,52 @@ class DatabaseHelper {
         'lastSynced': DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> insertAttendance(Map<String, dynamic> attendance) async {
+    final db = await database;
+
+    final data = Map<String, dynamic>.from(attendance);
+    final syncedValue = data['synced'];
+    data['synced'] = (syncedValue == true || syncedValue == 1) ? 1 : 0;
+
+    await db.insert(
+      'attendance',
+      data,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, dynamic>?> getAttendanceById(String attendanceId) async {
+    final db = await database;
+    final maps = await db.query(
+      'attendance',
+      where: 'id = ?',
+      whereArgs: [attendanceId],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return Map<String, dynamic>.from(maps.first);
+  }
+
+  Future<void> markAttendanceSynced(
+    String attendanceId, {
+    String? imageUrl,
+  }) async {
+    final db = await database;
+    final updateData = <String, dynamic>{
+      'synced': 1,
+      'sync_status': 'synced',
+    };
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      updateData['imageUrl'] = imageUrl;
+    }
+    await db.update(
+      'attendance',
+      updateData,
+      where: 'id = ?',
+      whereArgs: [attendanceId],
     );
   }
 

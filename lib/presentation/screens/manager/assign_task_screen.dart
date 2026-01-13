@@ -28,6 +28,8 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
   final TextEditingController _descCtrl = TextEditingController();
 
   DateTime? _selectedDate;
+  DateTime? _plannedStartAt;
+  DateTime? _plannedEndAt;
   String? _selectedStaffId;
   String? _selectedStaffName;
   String? _selectedSopId;
@@ -52,14 +54,40 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
 
     try {
       // Load staff
-      final staff = await _firestoreService.getUsersByRole('staff');
+      final auth = Provider.of<AuthenticationProvider>(context, listen: false);
+      final managerId = auth.currentUser?.id;
+      final staff = (managerId != null && managerId.isNotEmpty)
+          ? await _firestoreService.getStaffForManager(managerId)
+          : await _firestoreService.getUsersByRole('staff');
       if (mounted) {
         setState(() => _staffList = staff);
+      }
+
+      if (mounted && staff.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No staff found (or permission denied). Check Firestore rules and make sure staff users exist.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
       }
 
       // Load SOPs from Provider
       final sopProvider = Provider.of<SopProvider>(context, listen: false);
       await sopProvider.loadSOPs();
+
+      if (mounted && sopProvider.errorMessage.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load SOPs: ${sopProvider.errorMessage}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
 
       // Check if SOPs were loaded
       if (mounted && sopProvider.sops.isEmpty) {
@@ -90,11 +118,11 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F4),
+      backgroundColor: AppTheme.backGroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
         elevation: 0,
-        title: const Text("Assign Task", style: TextStyle(color: Colors.white)),
+        title: const Text("Create Task", style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
@@ -107,202 +135,306 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
           : Consumer<SopProvider>(
               builder: (context, sopProvider, child) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Task Details',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.textPrimary,
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Create New Task",
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 🔹 SOP DROPDOWN
-                          sopProvider.isLoading
-                              ? const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(16.0),
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                )
-                              : sopProvider.sops.isEmpty
-                                  ? Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border:
-                                            Border.all(color: Colors.orange),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.info_outline,
-                                              color: Colors.orange),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              'No SOPs found. Please create an SOP first.',
-                                              style: TextStyle(
-                                                color: Colors.orange[900],
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : _buildDropdown(
-                                      label: "Select SOP",
-                                      items: sopProvider.sops
-                                          .map((sop) => sop.title)
-                                          .toList(),
-                                      value: _selectedSopTitle,
-                                      onChange: (v) {
-                                        if (v != null) {
-                                          final sop = sopProvider.sops
-                                              .firstWhere((s) => s.title == v);
-
-                                          setState(() {
-                                            _selectedSopId = sop.id;
-                                            _selectedSopTitle = v;
-
-                                            _selectedFrequency = sop.frequency;
-                                            _requireEvidence =
-                                                sop.requiresPhoto;
-
-                                            // Auto-fill title/description
-                                            _titleCtrl.text = sop.title;
-                                            _descCtrl.text = sop.description;
-                                          });
-                                        }
-                                      },
-                                    ),
-
-                          const SizedBox(height: 12),
-
-                          // 🔹 STAFF DROPDOWN
-                          _buildDropdown(
-                            label: "Assign To Staff",
-                            items: _staffList
-                                .map((staff) =>
-                                    staff['name']?.toString() ?? "Unknown")
-                                .toList(),
-                            value: _selectedStaffName,
-                            onChange: (v) {
-                              final staff =
-                                  _staffList.firstWhere((s) => s['name'] == v);
-                              setState(() {
-                                _selectedStaffId = staff['id'];
-                                _selectedStaffName = v;
-                              });
-                            },
-                          ),
-
-                          // 🔹 FREQUENCY (AUTO FROM SOP)
-                          if (_selectedFrequency != null) ...[
-                            const SizedBox(height: 12),
-                            _buildFrequencyDropdown(),
-                          ],
-
-                          const SizedBox(height: 10),
-
-                          // 🔹 TITLE
-                          CustomeTextField(
-                            label: "Task Title",
-                            prefixICon: Icons.task_alt,
-                            controller: _titleCtrl,
-                            validator: (v) =>
-                                v == null || v.isEmpty ? "Enter title" : null,
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          // 🔹 DESCRIPTION
-                          CustomeTextField(
-                            label: "Task Description",
-                            prefixICon: Icons.description_outlined,
-                            maxLine: 4,
-                            controller: _descCtrl,
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          // 🔹 DUE DATE PICKER
-                          GestureDetector(
-                            onTap: _pickDate,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 18),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(16),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                                color: Colors.black.withOpacity(0.05)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 16,
+                                offset: const Offset(0, 10),
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.calendar_month),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    _selectedDate == null
-                                        ? "Select Due Date"
-                                        : DateFormat('MMM d, y')
-                                            .format(_selectedDate!),
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // 🔹 PHOTO REQUIRED SWITCH
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text("Photo Evidence Required",
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600)),
-                              Switch(
-                                value: _requireEvidence,
-                                activeColor: AppTheme.primaryColor,
-                                onChanged: (v) =>
-                                    setState(() => _requireEvidence = v),
-                              )
                             ],
                           ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 🔹 SOP DROPDOWN
+                              sopProvider.isLoading
+                                  ? const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    )
+                                  : sopProvider.sops.isEmpty
+                                      ? Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.orange.withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                                color: Colors.orange),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.info_outline,
+                                                  color: Colors.orange),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  'No SOPs found. Please create an SOP first.',
+                                                  style: TextStyle(
+                                                    color: Colors.orange[900],
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : _buildDropdown(
+                                          label: "Select SOP",
+                                          items: sopProvider.sops
+                                              .map((sop) => sop.title)
+                                              .toList(),
+                                          value: _selectedSopTitle,
+                                          onChange: (v) {
+                                            if (v != null) {
+                                              final sop = sopProvider.sops
+                                                  .firstWhere(
+                                                      (s) => s.title == v);
 
-                          const SizedBox(height: 24),
+                                              setState(() {
+                                                _selectedSopId = sop.id;
+                                                _selectedSopTitle = v;
 
-                          // 🔹 SUBMIT BUTTON
-                          _isLoading
-                              ? const Center(child: CircularProgressIndicator())
-                              : GradientButton(
-                                  text: "Assign Task",
-                                  onPressed: _submitTask,
+                                                _selectedFrequency =
+                                                    sop.frequency;
+                                                _requireEvidence =
+                                                    sop.requiresPhoto;
+
+                                                // Auto-fill title/description
+                                                _titleCtrl.text = sop.title;
+                                                _descCtrl.text =
+                                                    sop.description;
+                                              });
+                                            }
+                                          },
+                                        ),
+
+                              const SizedBox(height: 12),
+
+                              // 🔹 STAFF DROPDOWN
+                              _buildDropdown(
+                                label: "Assign To Staff",
+                                items: _staffList
+                                    .map((staff) =>
+                                        staff['name']?.toString() ?? "Unknown")
+                                    .toList(),
+                                value: _selectedStaffName,
+                                onChange: (v) {
+                                  if (v == null) return;
+                                  final staffMatches =
+                                      _staffList.where((s) => s['name'] == v);
+                                  if (staffMatches.isEmpty) return;
+                                  final staff = staffMatches.first;
+                                  setState(() {
+                                    _selectedStaffId = staff['id']?.toString();
+                                    _selectedStaffName = v;
+                                  });
+                                },
+                              ),
+
+                              // 🔹 FREQUENCY (AUTO FROM SOP)
+                              if (_selectedFrequency != null) ...[
+                                const SizedBox(height: 12),
+                                _buildFrequencyDropdown(),
+                              ],
+
+                              const SizedBox(height: 10),
+
+                              // 🔹 TITLE
+                              CustomeTextField(
+                                label: "Task Title",
+                                prefixICon: Icons.task_alt,
+                                controller: _titleCtrl,
+                                validator: (v) => v == null || v.isEmpty
+                                    ? "Enter title"
+                                    : null,
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              // 🔹 DESCRIPTION
+                              CustomeTextField(
+                                label: "Task Description",
+                                prefixICon: Icons.description_outlined,
+                                maxLine: 4,
+                                controller: _descCtrl,
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // 🔹 DUE DATE PICKER
+                              GestureDetector(
+                                onTap: _pickDate,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 18),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(
+                                        color: Colors.black.withOpacity(0.12)),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.calendar_month,
+                                          color: AppTheme.textSecondary),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        _selectedDate == null
+                                            ? "Select Due Date"
+                                            : DateFormat('MMM d, y')
+                                                .format(_selectedDate!),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: AppTheme.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                          const SizedBox(height: 10),
-                        ],
-                      ),
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // 🔹 PLANNED START TIME
+                              GestureDetector(
+                                onTap: () =>
+                                    _pickPlannedDateTime(isStart: true),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 18),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(
+                                        color: Colors.black.withOpacity(0.12)),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.play_circle_outline,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        _plannedStartAt == null
+                                            ? "Planned Start Time"
+                                            : DateFormat('MMM d, y • h:mm a')
+                                                .format(_plannedStartAt!),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: AppTheme.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // 🔹 PLANNED COMPLETION TIME
+                              GestureDetector(
+                                onTap: () =>
+                                    _pickPlannedDateTime(isStart: false),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 18),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(
+                                        color: Colors.black.withOpacity(0.12)),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.flag_outlined,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        _plannedEndAt == null
+                                            ? "Planned Completion Time"
+                                            : DateFormat('MMM d, y • h:mm a')
+                                                .format(_plannedEndAt!),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: AppTheme.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // 🔹 PHOTO REQUIRED SWITCH
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "Photo Evidence Required",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: _requireEvidence,
+                                    activeColor: AppTheme.primaryColor,
+                                    onChanged: (v) =>
+                                        setState(() => _requireEvidence = v),
+                                  )
+                                ],
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // 🔹 SUBMIT BUTTON
+                              _isLoading
+                                  ? const Center(
+                                      child: CircularProgressIndicator())
+                                  : GradientButton(
+                                      text: "Assign Task",
+                                      onPressed: _submitTask,
+                                    ),
+                              const SizedBox(height: 10),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -369,16 +501,53 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
     }
   }
 
+  Future<void> _pickPlannedDateTime({required bool isStart}) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime(2030),
+      initialDate: DateTime.now(),
+    );
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(DateTime.now()),
+    );
+    if (pickedTime == null || !mounted) return;
+
+    final dt = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      if (isStart) {
+        _plannedStartAt = dt;
+      } else {
+        _plannedEndAt = dt;
+      }
+    });
+  }
+
   Future<void> _submitTask() async {
-    if (!_formKey.currentState!.validate()) return;
+    final formState = _formKey.currentState;
+    if (formState == null) return;
+    if (!formState.validate()) return;
 
     if (_selectedDate == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Pick a due date")));
       return;
     }
 
     if (_selectedSopId == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Select an SOP")),
       );
@@ -386,6 +555,7 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
     }
 
     if (_selectedStaffId == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Select a staff member")),
       );
@@ -393,19 +563,49 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
     }
 
     if (_selectedFrequency == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Select frequency")),
       );
       return;
     }
 
+    if (_plannedStartAt == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Select planned start time")),
+      );
+      return;
+    }
+
+    if (_plannedEndAt == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Select planned completion time")),
+      );
+      return;
+    }
+
+    if (_plannedStartAt != null && _plannedEndAt != null) {
+      if (_plannedEndAt!.isBefore(_plannedStartAt!)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Planned end time must be after start time")),
+        );
+        return;
+      }
+    }
+
     final auth = Provider.of<AuthenticationProvider>(context, listen: false);
     if (auth.currentUser == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("User not logged in")));
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
@@ -418,6 +618,8 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
         assignedBy: auth.currentUser!.id,
         status: TaskStatus.pending,
         frequency: _selectedFrequency!,
+        plannedStartAt: _plannedStartAt,
+        plannedEndAt: _plannedEndAt,
         dueDate: _selectedDate,
         createdAt: DateTime.now(),
         requiresPhoto: _requireEvidence,
@@ -425,6 +627,7 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
 
       await _firestoreService.createTask(task);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Task assigned successfully"),
@@ -433,12 +636,16 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
       );
 
       Navigator.pop(context);
+      return;
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-
-    setState(() => _isLoading = false);
   }
 }

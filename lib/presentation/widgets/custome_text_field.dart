@@ -40,6 +40,7 @@ class CustomeTextField extends StatelessWidget {
         obscureText: isPassword,
         keyboardType: keyboardType,
         validator: validator,
+        maxLines: maxLine ?? 1,
         style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16),
         decoration: InputDecoration(
             labelText: label,

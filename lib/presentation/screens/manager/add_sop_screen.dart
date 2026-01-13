@@ -41,161 +41,171 @@ class _ManagerAddSopScreenState extends State<ManagerAddSopScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F4),
+      backgroundColor: AppTheme.backGroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
         elevation: 0,
-        title: const Text("Add SOP", style: TextStyle(color: Colors.white)),
+        title:
+            const Text("Add Checklist", style: TextStyle(color: Colors.white)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Checklist Details',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.black.withOpacity(0.05)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // SOP TITLE
+                    CustomeTextField(
+                      label: "Checklist Title",
+                      controller: _titleCtrl,
+                      prefixICon: Icons.article_outlined,
+                      validator: (v) =>
+                          v!.isEmpty ? "Enter checklist title" : null,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // DESCRIPTION
+                    CustomeTextField(
+                      label: "Description",
+                      controller: _descCtrl,
+                      maxLine: 4,
+                      prefixICon: Icons.description_outlined,
+                      validator: (v) => v!.isEmpty ? "Enter description" : null,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // STEPS
+                    CustomeTextField(
+                      label: "Checklist Items (one per line)",
+                      controller: _stepsCtrl,
+                      maxLine: 6,
+                      prefixICon: Icons.list_alt,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // FREQUENCY DROPDOWN
+                    _buildDropdown(
+                      label: "Frequency",
+                      items: frequencies,
+                      value: _frequency,
+                      onChange: (v) => setState(() => _frequency = v),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // PHOTO EVIDENCE SWITCH
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: Colors.black.withOpacity(0.12)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          )
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Photo Evidence Required",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Switch(
+                            value: _requireEvidence,
+                            activeColor: AppTheme.primaryColor,
+                            onChanged: (v) =>
+                                setState(() => _requireEvidence = v),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // CRITICAL SOP SWITCH
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: Colors.black.withOpacity(0.12)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          )
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Critical SOP",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Switch(
+                            value: _isCritical,
+                            activeColor: AppTheme.error,
+                            onChanged: (v) => setState(() => _isCritical = v),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // SUBMIT BUTTON
+                    _isLoading
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : GradientButton(
+                            text: "Save Checklist",
+                            onPressed: _saveSOP,
+                          ),
+                    const SizedBox(height: 10), // Extra bottom padding
+                  ],
+                ),
               ),
             ],
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Create New SOP",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // SOP TITLE
-                CustomeTextField(
-                  label: "SOP Title",
-                  controller: _titleCtrl,
-                  prefixICon: Icons.article_outlined,
-                  validator: (v) => v!.isEmpty ? "Enter SOP title" : null,
-                ),
-                const SizedBox(height: 12),
-
-                // DESCRIPTION
-                CustomeTextField(
-                  label: "Description",
-                  controller: _descCtrl,
-                  maxLine: 4,
-                  prefixICon: Icons.description_outlined,
-                  validator: (v) => v!.isEmpty ? "Enter description" : null,
-                ),
-                const SizedBox(height: 12),
-
-                // STEPS
-                CustomeTextField(
-                  label: "Steps (one per line)",
-                  controller: _stepsCtrl,
-                  maxLine: 6,
-                  prefixICon: Icons.list_alt,
-                ),
-                const SizedBox(height: 16),
-
-                // FREQUENCY DROPDOWN
-                _buildDropdown(
-                  label: "Frequency",
-                  items: frequencies,
-                  value: _frequency,
-                  onChange: (v) => setState(() => _frequency = v),
-                ),
-                const SizedBox(height: 16),
-
-                // PHOTO EVIDENCE SWITCH
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade300),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      )
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Photo Evidence Required",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Switch(
-                        value: _requireEvidence,
-                        activeColor: AppTheme.primaryColor,
-                        onChanged: (v) => setState(() => _requireEvidence = v),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // CRITICAL SOP SWITCH
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade300),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      )
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Critical SOP",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Switch(
-                        value: _isCritical,
-                        activeColor: Colors.red,
-                        onChanged: (v) => setState(() => _isCritical = v),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // SUBMIT BUTTON
-                _isLoading
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    : GradientButton(
-                        text: "Save SOP",
-                        onPressed: _saveSOP,
-                      ),
-                const SizedBox(height: 10), // Extra bottom padding
-              ],
-            ),
           ),
         ),
       ),
@@ -213,7 +223,7 @@ class _ManagerAddSopScreenState extends State<ManagerAddSopScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Colors.black.withOpacity(0.12)),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -289,7 +299,7 @@ class _ManagerAddSopScreenState extends State<ManagerAddSopScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("SOP Added Successfully!"),
+            content: Text("Checklist Added Successfully!"),
             backgroundColor: Colors.green,
           ),
         );

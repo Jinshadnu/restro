@@ -8,6 +8,8 @@ class AppUserModel extends UserEntity {
     required super.name,
     required super.phone,
     required super.lastSynced,
+    super.isSelfieVerified,
+    super.selfieVerifiedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -18,6 +20,8 @@ class AppUserModel extends UserEntity {
       'name': name,
       'phone': phone,
       'last_synced': lastSynced,
+      'is_selfie_verified': isSelfieVerified,
+      if (selfieVerifiedAt != null) 'selfie_verified_at': selfieVerifiedAt,
     };
   }
 
@@ -29,17 +33,21 @@ class AppUserModel extends UserEntity {
       name: map['name'],
       phone: map['phone'],
       lastSynced: map['last_synced'],
+      isSelfieVerified: map['is_selfie_verified'] ?? false,
+      selfieVerifiedAt: map['selfie_verified_at'],
     );
   }
 
+  @override
   UserEntity toEntity() {
     return UserEntity(
-      id: id,
-      email: email,
-      role: role,
-      name: name,
-      phone: phone,
-      lastSynced: lastSynced,
-    );
+        id: id,
+        email: email,
+        role: role,
+        name: name,
+        phone: phone,
+        lastSynced: lastSynced,
+        isSelfieVerified: isSelfieVerified,
+        selfieVerifiedAt: selfieVerifiedAt);
   }
 }
