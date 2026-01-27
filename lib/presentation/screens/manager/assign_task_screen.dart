@@ -31,10 +31,10 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
   DateTime? _plannedStartAt;
   DateTime? _plannedEndAt;
   String? _selectedStaffId;
-  String? _selectedStaffName;
   String? _selectedSopId;
   String? _selectedSopTitle;
   TaskFrequency? _selectedFrequency;
+  TaskGrade? _selectedGrade;
 
   bool _requireEvidence = false;
   bool _isLoading = false;
@@ -141,30 +141,10 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Task Details',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                                color: Colors.black.withOpacity(0.05)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.06),
-                                blurRadius: 16,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
+                        // 🔹 TASK DETAILS CARD
+                        _buildSectionCard(
+                          title: "Task Details",
+                          icon: Icons.task_alt,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -234,36 +214,25 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                                           },
                                         ),
 
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 16),
 
                               // 🔹 STAFF DROPDOWN
-                              _buildDropdown(
-                                label: "Assign To Staff",
-                                items: _staffList
-                                    .map((staff) =>
-                                        staff['name']?.toString() ?? "Unknown")
-                                    .toList(),
-                                value: _selectedStaffName,
-                                onChange: (v) {
-                                  if (v == null) return;
-                                  final staffMatches =
-                                      _staffList.where((s) => s['name'] == v);
-                                  if (staffMatches.isEmpty) return;
-                                  final staff = staffMatches.first;
-                                  setState(() {
-                                    _selectedStaffId = staff['id']?.toString();
-                                    _selectedStaffName = v;
-                                  });
-                                },
-                              ),
+                              _buildStaffDropdown(),
+
+                              const SizedBox(height: 24),
 
                               // 🔹 FREQUENCY (AUTO FROM SOP)
                               if (_selectedFrequency != null) ...[
-                                const SizedBox(height: 12),
                                 _buildFrequencyDropdown(),
+                                const SizedBox(height: 24),
                               ],
 
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 24),
+
+                              // 🔹 TASK PRIORITY
+                              _buildGradeDropdown(),
+
+                              const SizedBox(height: 24),
 
                               // 🔹 TITLE
                               CustomeTextField(
@@ -275,7 +244,7 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                                     : null,
                               ),
 
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 24),
 
                               // 🔹 DESCRIPTION
                               CustomeTextField(
@@ -285,119 +254,60 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                                 controller: _descCtrl,
                               ),
 
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 24),
+                            ],
+                          ),
+                        ),
 
+                        const SizedBox(height: 32),
+
+                        // 🔹 SCHEDULE CARD
+                        _buildSectionCard(
+                          title: "Schedule",
+                          icon: Icons.schedule,
+                          child: Column(
+                            children: [
                               // 🔹 DUE DATE PICKER
-                              GestureDetector(
+                              _buildDatePickerTile(
+                                label: "Due Date *",
+                                icon: Icons.calendar_month,
+                                value: _selectedDate,
                                 onTap: _pickDate,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 18),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(
-                                        color: Colors.black.withOpacity(0.12)),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.calendar_month,
-                                          color: AppTheme.textSecondary),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        _selectedDate == null
-                                            ? "Select Due Date"
-                                            : DateFormat('MMM d, y')
-                                                .format(_selectedDate!),
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: AppTheme.textPrimary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ),
 
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 24),
 
                               // 🔹 PLANNED START TIME
-                              GestureDetector(
+                              _buildDatePickerTile(
+                                label: "Planned Start Time",
+                                icon: Icons.play_circle_outline,
+                                value: _plannedStartAt,
                                 onTap: () =>
                                     _pickPlannedDateTime(isStart: true),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 18),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(
-                                        color: Colors.black.withOpacity(0.12)),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.play_circle_outline,
-                                        color: AppTheme.textSecondary,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        _plannedStartAt == null
-                                            ? "Planned Start Time"
-                                            : DateFormat('MMM d, y • h:mm a')
-                                                .format(_plannedStartAt!),
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: AppTheme.textPrimary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ),
 
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 24),
 
                               // 🔹 PLANNED COMPLETION TIME
-                              GestureDetector(
+                              _buildDatePickerTile(
+                                label: "Planned Completion Time",
+                                icon: Icons.flag_outlined,
+                                value: _plannedEndAt,
                                 onTap: () =>
                                     _pickPlannedDateTime(isStart: false),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 18),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(
-                                        color: Colors.black.withOpacity(0.12)),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.flag_outlined,
-                                        color: AppTheme.textSecondary,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        _plannedEndAt == null
-                                            ? "Planned Completion Time"
-                                            : DateFormat('MMM d, y • h:mm a')
-                                                .format(_plannedEndAt!),
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: AppTheme.textPrimary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ),
+                            ],
+                          ),
+                        ),
 
-                              const SizedBox(height: 16),
+                        const SizedBox(height: 32),
 
+                        // 🔹 SETTINGS CARD
+                        _buildSectionCard(
+                          title: "Settings",
+                          icon: Icons.settings,
+                          child: Column(
+                            children: [
                               // 🔹 PHOTO REQUIRED SWITCH
                               Row(
                                 mainAxisAlignment:
@@ -419,21 +329,20 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                                   )
                                 ],
                               ),
-
-                              const SizedBox(height: 24),
-
-                              // 🔹 SUBMIT BUTTON
-                              _isLoading
-                                  ? const Center(
-                                      child: CircularProgressIndicator())
-                                  : GradientButton(
-                                      text: "Assign Task",
-                                      onPressed: _submitTask,
-                                    ),
-                              const SizedBox(height: 10),
                             ],
                           ),
                         ),
+
+                        const SizedBox(height: 40),
+
+                        // 🔹 SUBMIT BUTTON
+                        _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : GradientButton(
+                                text: "Assign Task",
+                                onPressed: _submitTask,
+                              ),
+                        const SizedBox(height: 10),
                       ],
                     ),
                   ),
@@ -450,18 +359,47 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
     required String? value,
     required Function(String?) onChange,
   }) {
+    final safeValue = (value != null && items.contains(value)) ? value : null;
     return DropdownButtonFormField<String>(
-      value: value,
+      value: safeValue,
+      isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+        labelStyle: TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
         ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.12)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.12)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryColor),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      icon: Icon(
+        Icons.keyboard_arrow_down,
+        color: AppTheme.textSecondary,
       ),
       items: items
           .map((item) => DropdownMenuItem(
                 value: item,
-                child: Text(item),
+                child: Text(
+                  item,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
               ))
           .toList(),
       onChanged: onChange,
@@ -472,18 +410,397 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
   Widget _buildFrequencyDropdown() {
     return DropdownButtonFormField<TaskFrequency>(
       value: _selectedFrequency,
-      decoration: const InputDecoration(
+      isExpanded: true,
+      decoration: InputDecoration(
         labelText: "Frequency",
-        border: OutlineInputBorder(),
+        labelStyle: TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.12)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.12)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryColor),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      icon: Icon(
+        Icons.keyboard_arrow_down,
+        color: AppTheme.textSecondary,
       ),
       items: TaskFrequency.values
           .map((f) => DropdownMenuItem(
                 value: f,
-                child: Text(f.toString().split('.').last.toUpperCase()),
+                child: Text(
+                  f.toString().split('.').last.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
               ))
           .toList(),
       onChanged: (value) {
         setState(() => _selectedFrequency = value);
+      },
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: AppTheme.primaryColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatePickerTile({
+    required String label,
+    required IconData icon,
+    required DateTime? value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.black.withOpacity(0.12)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppTheme.textSecondary, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                value == null
+                    ? label
+                    : label == "Due Date *"
+                        ? DateFormat('MMM d, y').format(value)
+                        : DateFormat('MMM d, y • h:mm a').format(value),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStaffDropdown() {
+    final staffItems = _staffList
+        .where((s) => (s['id'] ?? '').toString().trim().isNotEmpty)
+        .toList();
+
+    final safeSelectedStaffId = (_selectedStaffId != null &&
+            staffItems.any(
+              (s) => (s['id'] ?? '').toString() == _selectedStaffId,
+            ))
+        ? _selectedStaffId
+        : null;
+
+    String roleDisplayFor(Map<String, dynamic> staff) {
+      final raw =
+          (staff['staff_role'] ?? staff['staffRole'] ?? '').toString().trim();
+      if (raw.isEmpty) return '';
+      return raw
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .map(
+            (w) =>
+                '${w[0].toUpperCase()}${w.length > 1 ? w.substring(1).toLowerCase() : ''}',
+          )
+          .join(' ');
+    }
+
+    Widget staffRow(String name, String roleDisplay, {bool chip = false}) {
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (roleDisplay.isNotEmpty) ...[
+            const SizedBox(width: 12),
+            if (chip)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  roleDisplay,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              )
+            else
+              Text(
+                roleDisplay,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+          ],
+        ],
+      );
+    }
+
+    return DropdownButtonFormField<String>(
+      value: safeSelectedStaffId,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: "Assign To Staff",
+        labelStyle: TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.12)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.12)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryColor),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      icon: Icon(
+        Icons.keyboard_arrow_down,
+        color: AppTheme.textSecondary,
+      ),
+      items: staffItems.map((staff) {
+        final staffId = (staff['id'] ?? '').toString();
+        final name = (staff['name'] ?? 'Unknown').toString();
+        final roleDisplay = roleDisplayFor(staff);
+        return DropdownMenuItem<String>(
+          value: staffId,
+          child: staffRow(name, roleDisplay, chip: true),
+        );
+      }).toList(),
+      selectedItemBuilder: (context) {
+        return staffItems.map((staff) {
+          final name = (staff['name'] ?? 'Unknown').toString();
+          final roleDisplay = roleDisplayFor(staff);
+          return staffRow(name, roleDisplay);
+        }).toList();
+      },
+      onChanged: (staffId) {
+        if (staffId == null || staffId.isEmpty) return;
+        setState(() {
+          _selectedStaffId = staffId;
+        });
+      },
+      validator: (val) =>
+          (val == null || val.isEmpty) ? "Select Assign To Staff" : null,
+    );
+  }
+
+  Widget _buildGradeDropdown() {
+    return DropdownButtonFormField<TaskGrade>(
+      value: _selectedGrade,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: "Task Priority",
+        labelStyle: TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.12)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.12)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryColor),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      ),
+      icon: Icon(
+        Icons.keyboard_arrow_down,
+        color: AppTheme.textSecondary,
+      ),
+      menuMaxHeight: 220, // Increased from 180 to 220
+      items: [
+        DropdownMenuItem<TaskGrade>(
+          value: TaskGrade.normal,
+          child: Container(
+            constraints: BoxConstraints(maxHeight: 48),
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(
+                    Icons.task_alt,
+                    color: Colors.blue,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Grade B',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Standard',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        DropdownMenuItem<TaskGrade>(
+          value: TaskGrade.critical,
+          child: Container(
+            constraints: BoxConstraints(maxHeight: 48),
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(
+                    Icons.priority_high,
+                    color: Colors.red,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Grade A',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Critical',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+      onChanged: (value) {
+        setState(() => _selectedGrade = value);
+      },
+      validator: (value) {
+        if (value == null) {
+          return '';
+        }
+        return null;
       },
     );
   }
@@ -570,6 +887,14 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
       return;
     }
 
+    if (_selectedGrade == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Select task grade")),
+      );
+      return;
+    }
+
     if (_plannedStartAt == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -618,6 +943,7 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
         assignedBy: auth.currentUser!.id,
         status: TaskStatus.pending,
         frequency: _selectedFrequency!,
+        grade: _selectedGrade!, // Added missing grade field
         plannedStartAt: _plannedStartAt,
         plannedEndAt: _plannedEndAt,
         dueDate: _selectedDate,
@@ -635,15 +961,19 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
         ),
       );
 
-      Navigator.pop(context);
-      return;
+      // Clear loading before leaving the screen to avoid setState-after-dispose.
+      setState(() => _isLoading = false);
+
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
     } finally {
-      if (mounted) {
+      if (mounted && _isLoading) {
         setState(() => _isLoading = false);
       }
     }

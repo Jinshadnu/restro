@@ -1,5 +1,7 @@
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:path/path.dart' as p;
 
 class FirebaseStorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -17,6 +19,39 @@ class FirebaseStorageService {
         );
       }
       throw Exception('Failed to upload photo: $e');
+    }
+  }
+
+  Future<String> uploadTaskRejectionMarkedImage(
+      String taskId, Uint8List pngBytes) async {
+    try {
+      final ref = _storage
+          .ref()
+          .child('task_rejection_marked_images')
+          .child('$taskId.png');
+      final snapshot = await ref.putData(
+        pngBytes,
+        SettableMetadata(contentType: 'image/png'),
+      );
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      throw Exception('Failed to upload marked rejection image: $e');
+    }
+  }
+
+  Future<String> uploadTaskRejectionVoiceNote(
+      String taskId, File audioFile) async {
+    try {
+      final ext = p.extension(audioFile.path).trim();
+      final safeExt = ext.isNotEmpty ? ext : '.m4a';
+      final ref = _storage
+          .ref()
+          .child('task_rejection_voice_notes')
+          .child('$taskId$safeExt');
+      final snapshot = await ref.putFile(audioFile);
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      throw Exception('Failed to upload voice note: $e');
     }
   }
 
@@ -38,6 +73,22 @@ class FirebaseStorageService {
       return await ref.getDownloadURL();
     } catch (e) {
       throw Exception('Failed to upload attendance photo: $e');
+    }
+  }
+
+  Future<String> uploadAttendanceRejectionVoiceNote(
+      String attendanceId, File audioFile) async {
+    try {
+      final ext = p.extension(audioFile.path).trim();
+      final safeExt = ext.isNotEmpty ? ext : '.m4a';
+      final ref = _storage
+          .ref()
+          .child('attendance_rejection_voice_notes')
+          .child('$attendanceId$safeExt');
+      final snapshot = await ref.putFile(audioFile);
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      throw Exception('Failed to upload attendance voice note: $e');
     }
   }
 }

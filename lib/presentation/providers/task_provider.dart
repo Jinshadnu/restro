@@ -1,13 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:restro/domain/usecases/task/complete_task_usecase.dart';
+import 'package:restro/data/repositories/task_repository.dart';
 import 'package:restro/domain/usecases/task/get_tasks_usecase.dart';
+import 'package:restro/domain/usecases/task/complete_task_usecase.dart';
 import 'package:restro/domain/usecases/task/verify_tasks_usecase.dart';
-import '../../domain/entities/task_entity.dart';
-import '../../data/repositories/task_repository.dart';
-import '../../data/datasources/remote/firestore_service.dart';
+import 'package:restro/data/datasources/remote/firestore_service.dart';
+import 'package:restro/services/daily_scoring_engine.dart';
+import 'package:restro/domain/entities/task_entity.dart';
 import '../../data/datasources/remote/firebase_storage_service.dart';
 import 'dart:io';
+import 'dart:typed_data';
 
 class TaskProvider with ChangeNotifier {
   final GetTasksUseCase _getTasksUseCase;
@@ -42,6 +44,27 @@ class TaskProvider with ChangeNotifier {
 
   Stream<List<TaskEntity>> getTasksStream(String userId, {String? status}) {
     return _getTasksUseCase.execute(userId, status: status);
+  }
+
+  Future<void> reworkTask(String taskId) async {
+    _isLoading = true;
+    _errorMessage = '';
+    notifyListeners();
+
+    try {
+      final repository = TaskRepository(
+        FirestoreService(),
+        FirebaseStorageService(),
+      );
+      await repository.reworkTask(taskId);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Stream<List<TaskEntity>> getVerificationPendingTasks(String managerId) {
@@ -88,6 +111,8 @@ class TaskProvider with ChangeNotifier {
     String taskId,
     bool approved, {
     String? rejectionReason,
+    File? rejectionVoiceNote,
+    Uint8List? rejectionMarkedImageBytes,
   }) async {
     _isLoading = true;
     _errorMessage = '';
@@ -98,7 +123,18 @@ class TaskProvider with ChangeNotifier {
         taskId,
         approved,
         rejectionReason: rejectionReason,
+        rejectionVoiceNote: rejectionVoiceNote,
+        rejectionMarkedImageBytes: rejectionMarkedImageBytes,
       );
+
+      // After manager approval/rejection, refresh the assigned staff's daily score
+      // so staff dashboard reflects changes immediately.
+      final updatedTask = await _firestoreService.getTaskById(taskId);
+      if (updatedTask != null) {
+        final scoringEngine = DailyScoringEngine();
+        await scoringEngine.handleTaskStatusChange(taskId);
+      }
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {

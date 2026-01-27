@@ -31,219 +31,799 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backGroundColor,
       appBar: const CustomAppbar(title: 'Owner Dashboard'),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.white.withOpacity(0.1),
-              Colors.white.withOpacity(0.1),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // User header
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Premium header card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryColor,
+                      AppTheme.primaryColor.withOpacity(0.85),
                     ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Colors.white,
-                        child: Icon(
-                          Icons.admin_panel_settings,
-                          color: AppTheme.primaryColor,
-                          size: 30,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.18),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.admin_panel_settings,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Welcome, Owner',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                DateFormat('EEEE, MMMM d, yyyy')
+                                    .format(DateTime.now()),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.92),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.14),
                         ),
                       ),
-                      const SizedBox(width: 15),
-                      Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.analytics,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Business Overview',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.95),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Monitor performance metrics and analytics',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              Consumer<AdminDashboardProvider>(
+                builder: (context, provider, child) {
+                  final data = provider.ownerDashboard;
+                  final scoreValue =
+                      (data['shopDailyScore'] as num?)?.toDouble();
+                  final score = scoreValue == null ? null : scoreValue.round();
+
+                  Color zoneColor;
+                  IconData zoneIcon;
+                  String zoneLabel;
+                  if (score != null && score >= 90) {
+                    zoneColor = const Color(0xFF4CAF50);
+                    zoneIcon = Icons.check_circle;
+                    zoneLabel = 'Shop is Healthy.';
+                  } else if (score != null && score >= 80) {
+                    zoneColor = const Color(0xFFFFC107);
+                    zoneIcon = Icons.warning_amber_rounded;
+                    zoneLabel = 'Needs Attention.';
+                  } else {
+                    zoneColor = const Color(0xFFF44336);
+                    zoneIcon = Icons.cancel;
+                    zoneLabel = 'Action Required!';
+                  }
+
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(22),
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          zoneColor,
+                          zoneColor.withOpacity(0.86),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: zoneColor.withOpacity(0.35),
+                          blurRadius: 18,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.18),
+                            ),
+                          ),
+                          child: Icon(
+                            zoneIcon,
+                            color: Colors.white,
+                            size: 34,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Shop Performance',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.95),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                zoneLabel,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Text(
+                            score == null ? '--/100' : '$score/100',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              // Enhanced section header
+              _buildSectionHeader(
+                  'Performance Metrics', Icons.analytics_outlined),
+              const SizedBox(height: 16),
+
+              // Owner dashboard metrics
+              Consumer<AdminDashboardProvider>(
+                builder: (context, provider, child) {
+                  if (provider.isLoading) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+
+                  final data = provider.ownerDashboard;
+
+                  return Column(
+                    children: [
+                      // Today's work status
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border:
+                              Border.all(color: Colors.black.withOpacity(0.04)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              DateFormat('EEEE, MMMM d, yyyy')
-                                  .format(DateTime.now()),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppTheme.primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.today,
+                                    color: AppTheme.primaryColor,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text(
+                                    "Today's Work Status",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: Colors.blue.withOpacity(0.16),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    DateFormat('MMM d').format(DateTime.now()),
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildTodayTile(
+                                    icon: Icons.check_circle,
+                                    title: 'Completed',
+                                    count: (data['completedToday'] as num?)
+                                            ?.toInt() ??
+                                        0,
+                                    color: AppTheme.success,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildTodayTile(
+                                    icon: Icons.pending,
+                                    title: 'Pending',
+                                    count: (data['pendingTasks'] as num?)
+                                            ?.toInt() ??
+                                        0,
+                                    color: AppTheme.warning,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildTodayTile(
+                                    icon: Icons.verified_user,
+                                    title: 'To Verify',
+                                    count: (data['verificationPending'] as num?)
+                                            ?.toInt() ??
+                                        0,
+                                    color: AppTheme.tertiaryColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildTodayTile(
+                                    icon: Icons.fact_check,
+                                    title: 'Attendance',
+                                    count: (data['attendancePendingApprovals']
+                                                as num?)
+                                            ?.toInt() ??
+                                        0,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
+
+                      // Enhanced metric cards
+                      _EnhancedMetricCard(
+                        title: 'Task Compliance',
+                        value:
+                            '${(data['compliance'] ?? 0.0).toStringAsFixed(1)}%',
+                        icon: Icons.trending_up,
+                        color: Colors.green,
+                        subtitle: 'Overall task completion rate',
+                        trend: '+2.5%',
+                        isPositive: true,
+                      ),
+                      const SizedBox(height: 16),
+
+                      _EnhancedMetricCard(
+                        title: 'Avg Verification Time',
+                        value:
+                            '${(data['avgVerificationTime'] ?? 0.0).toStringAsFixed(1)} hrs',
+                        icon: Icons.access_time,
+                        color: Colors.blue,
+                        subtitle: 'Average time to verify tasks',
+                        trend: '-0.8 hrs',
+                        isPositive: true,
+                      ),
+                      const SizedBox(height: 16),
+
+                      _EnhancedMetricCard(
+                        title: 'Most Failed Task',
+                        value: data['mostFailedTask'] ?? 'None',
+                        icon: Icons.warning,
+                        color: Colors.red,
+                        subtitle: 'Task with most rejections',
+                        trend:
+                            '${(data['mostFailedTaskCount'] as num?)?.toInt() ?? 0} failures',
+                        isPositive: false,
+                      ),
                     ],
-                  ),
-                ),
+                  );
+                },
+              ),
 
-                const Text(
-                  "Performance Metrics",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
+              const SizedBox(height: 28),
 
-                // Owner dashboard metrics
-                Consumer<AdminDashboardProvider>(
-                  builder: (context, provider, child) {
-                    if (provider.isLoading) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
+              // Enhanced section header
+              _buildSectionHeader('Quick Actions', Icons.flash_on),
+              const SizedBox(height: 16),
 
-                    final data = provider.ownerDashboard;
-
-                    return Column(
-                      children: [
-                        // Compliance Percentage
-                        _MetricCard(
-                          title: 'Task Compliance',
-                          value:
-                              '${(data['compliance'] ?? 0.0).toStringAsFixed(1)}%',
-                          icon: Icons.trending_up,
-                          color: Colors.green,
-                          subtitle: 'Overall task completion rate',
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Average Verification Time
-                        _MetricCard(
-                          title: 'Avg Verification Time',
-                          value:
-                              '${(data['avgVerificationTime'] ?? 0.0).toStringAsFixed(1)} hrs',
-                          icon: Icons.access_time,
-                          color: Colors.blue,
-                          subtitle: 'Average time to verify tasks',
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Most Failed Task
-                        _MetricCard(
-                          title: 'Most Failed Task',
-                          value: data['mostFailedTask'] ?? 'None',
-                          icon: Icons.warning,
-                          color: Colors.red,
-                          subtitle: 'Task with most rejections',
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 24),
-                const Text(
-                  "Quick Actions",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Quick action buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ActionButton(
-                        icon: Icons.description,
-                        label: 'Manage SOPs',
-                        color: AppTheme.primaryColor,
-                        onTap: () {
-                          Navigator.pushNamed(context, AppRoutes.managesop);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ActionButton(
-                        icon: Icons.analytics,
-                        label: 'View Reports',
-                        color: Colors.purple,
-                        onTap: () {
-                          Navigator.pushNamed(context, AppRoutes.ownerReports);
-                        },
-                      ),
+              // Enhanced quick actions grid
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.black.withOpacity(0.04)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Row(
+                child: GridView(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    mainAxisExtent: 112,
+                  ),
                   children: [
-                    Expanded(
-                      child: _ActionButton(
-                        icon: Icons.people,
-                        label: 'Manage Staff',
-                        color: Colors.teal,
-                        onTap: () {
-                          Navigator.pushNamed(context, AppRoutes.manageStaff);
-                        },
-                      ),
+                    _EnhancedActionButton(
+                      icon: Icons.description,
+                      label: 'Manage SOPs',
+                      color: AppTheme.primaryColor,
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.managesop);
+                      },
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ActionButton(
-                        icon: Icons.settings,
-                        label: 'Settings',
-                        color: Colors.grey,
-                        onTap: () {
-                          Navigator.pushNamed(context, AppRoutes.ownerSettings);
-                        },
-                      ),
+                    _EnhancedActionButton(
+                      icon: Icons.analytics,
+                      label: 'View Reports',
+                      color: Colors.purple,
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.ownerReports);
+                      },
+                    ),
+                    _EnhancedActionButton(
+                      icon: Icons.people,
+                      label: 'Manage Staff',
+                      color: Colors.teal,
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.manageStaff);
+                      },
+                    ),
+                    _EnhancedActionButton(
+                      icon: Icons.settings,
+                      label: 'Settings',
+                      color: Colors.grey,
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.ownerSettings);
+                      },
                     ),
                   ],
                 ),
+              ),
 
-                const SizedBox(height: 24),
-                const Text(
-                  "Overall Task Details",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
+              const SizedBox(height: 28),
+
+              // Enhanced section header
+              _buildSectionHeader('Overall Task Details', Icons.bar_chart),
+              const SizedBox(height: 12),
+              _OverallTaskGraph(firestoreService: _firestoreService),
+
+              const SizedBox(height: 28),
+
+              // Enhanced section header
+              _buildSectionHeader('Staff Performance', Icons.people),
+              const SizedBox(height: 12),
+              _StaffPerformanceGraph(firestoreService: _firestoreService),
+
+              const SizedBox(height: 28),
+
+              // Enhanced section header
+              _buildSectionHeader(
+                  'Task Trends (Last 7 Days)', Icons.trending_up),
+              const SizedBox(height: 12),
+              _TaskTrendsGraph(firestoreService: _firestoreService),
+
+              const SizedBox(height: 28),
+
+              // Enhanced section header
+              _buildSectionHeader(
+                  'Task Category Distribution', Icons.pie_chart),
+              const SizedBox(height: 12),
+              _TaskCategoryGraph(firestoreService: _firestoreService),
+
+              const SizedBox(height: 28),
+
+              // Enhanced section header
+              _buildSectionHeader(
+                  'Staff Role Performance', Icons.person_search),
+              const SizedBox(height: 12),
+              _StaffRolePerformanceGraph(firestoreService: _firestoreService),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Enhanced section header widget
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppTheme.primaryColor, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTodayTile({
+    required IconData icon,
+    required String title,
+    required int count,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, size: 22, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 12),
-                _OverallTaskGraph(firestoreService: _firestoreService),
-
-                const SizedBox(height: 24),
-                const Text(
-                  "Staff Performance",
+                const SizedBox(height: 4),
+                Text(
+                  '$count',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w700,
+                    color: color,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 12),
-                _StaffPerformanceGraph(firestoreService: _firestoreService),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced metric card widget
+  Widget _EnhancedMetricCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required String subtitle,
+    required String trend,
+    required bool isPositive,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.04)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.2)),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color:
+                      (isPositive ? Colors.green : Colors.red).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: (isPositive ? Colors.green : Colors.red)
+                        .withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isPositive ? Icons.trending_up : Icons.trending_down,
+                      size: 14,
+                      color: isPositive ? Colors.green : Colors.red,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      trend,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isPositive ? Colors.green : Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced action button widget
+  Widget _EnhancedActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -541,6 +1121,390 @@ class _ActionButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TaskTrendsGraph extends StatelessWidget {
+  final FirestoreService firestoreService;
+  const _TaskTrendsGraph({required this.firestoreService});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: firestoreService.getAllTasks(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final tasks = snapshot.data ?? [];
+        final now = DateTime.now();
+        final Map<String, Map<String, int>> dailyData = {};
+
+        // Initialize last 7 days
+        for (int i = 6; i >= 0; i--) {
+          final date = now.subtract(Duration(days: i));
+          final dateKey = DateFormat('MMM dd').format(date);
+          dailyData[dateKey] = {
+            'completed': 0,
+            'pending': 0,
+            'rejected': 0,
+          };
+        }
+
+        // Categorize tasks by date
+        for (var task in tasks) {
+          if (task.completedAt != null) {
+            final taskDate = task.completedAt!;
+            final dateKey = DateFormat('MMM dd').format(taskDate);
+            if (dailyData.containsKey(dateKey)) {
+              if (task.status == TaskStatus.approved) {
+                dailyData[dateKey]!['completed'] =
+                    (dailyData[dateKey]!['completed'] ?? 0) + 1;
+              } else if (task.status == TaskStatus.rejected) {
+                dailyData[dateKey]!['rejected'] =
+                    (dailyData[dateKey]!['rejected'] ?? 0) + 1;
+              }
+            }
+          }
+        }
+
+        return _trendsCard(dailyData);
+      },
+    );
+  }
+}
+
+class _TaskCategoryGraph extends StatelessWidget {
+  final FirestoreService firestoreService;
+  const _TaskCategoryGraph({required this.firestoreService});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: firestoreService.getAllTasks(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final tasks = snapshot.data ?? [];
+        final Map<String, int> categoryCount = {};
+
+        for (var task in tasks) {
+          String category = 'General';
+          final title = task.title.toLowerCase();
+
+          if (title.contains('cleaning') || title.contains('clean')) {
+            category = 'Cleaning';
+          } else if (title.contains('shawarma')) {
+            category = 'Shawarma';
+          } else if (title.contains('bbq') || title.contains('alfaham')) {
+            category = 'BBQ/Grill';
+          } else if (title.contains('juice') || title.contains('tea')) {
+            category = 'Beverages';
+          } else if (title.contains('cashier')) {
+            category = 'Cashier';
+          } else if (title.contains('waiter')) {
+            category = 'Service';
+          }
+
+          categoryCount[category] = (categoryCount[category] ?? 0) + 1;
+        }
+
+        final total = tasks.isEmpty ? 1 : tasks.length;
+        final items = categoryCount.entries.map((entry) {
+          return _PieData(
+            entry.key,
+            entry.value / total,
+            _getCategoryColor(entry.key),
+            entry.value,
+          );
+        }).toList();
+
+        return _pieCard(items);
+      },
+    );
+  }
+}
+
+class _StaffRolePerformanceGraph extends StatelessWidget {
+  final FirestoreService firestoreService;
+  const _StaffRolePerformanceGraph({required this.firestoreService});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: firestoreService.getAllTasks(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final tasks = snapshot.data ?? [];
+        final Map<String, Map<String, int>> roleData = {};
+
+        // Get staff roles from user data
+        for (var task in tasks) {
+          // This would need to be enhanced to get actual staff roles
+          // For now, we'll categorize by performance
+          String role = 'Staff';
+          if (task.status == TaskStatus.approved) {
+            role = 'High Performer';
+          } else if (task.status == TaskStatus.rejected) {
+            role = 'Needs Attention';
+          }
+
+          if (!roleData.containsKey(role)) {
+            roleData[role] = {'completed': 0, 'total': 0};
+          }
+          roleData[role]!['total'] = (roleData[role]!['total'] ?? 0) + 1;
+          if (task.status == TaskStatus.approved) {
+            roleData[role]!['completed'] =
+                (roleData[role]!['completed'] ?? 0) + 1;
+          }
+        }
+
+        final items = roleData.entries.map((entry) {
+          final completionRate = entry.value['total']! > 0
+              ? entry.value['completed']! / entry.value['total']!
+              : 0.0;
+          return _BarData(
+            entry.key,
+            completionRate,
+            _getRoleColor(entry.key),
+            entry.value['completed']!,
+          );
+        }).toList();
+
+        return _barCard(items, showLabel: true);
+      },
+    );
+  }
+}
+
+class _PieData {
+  final String label;
+  final double value;
+  final Color color;
+  final int count;
+  _PieData(this.label, this.value, this.color, this.count);
+}
+
+Color _getCategoryColor(String category) {
+  switch (category) {
+    case 'Cleaning':
+      return Colors.blue;
+    case 'Shawarma':
+      return Colors.orange;
+    case 'BBQ/Grill':
+      return Colors.red;
+    case 'Beverages':
+      return Colors.green;
+    case 'Cashier':
+      return Colors.purple;
+    case 'Service':
+      return Colors.teal;
+    default:
+      return Colors.grey;
+  }
+}
+
+Color _getRoleColor(String role) {
+  switch (role) {
+    case 'High Performer':
+      return Colors.green;
+    case 'Needs Attention':
+      return Colors.red;
+    default:
+      return AppTheme.primaryColor;
+  }
+}
+
+Widget _trendsCard(Map<String, Map<String, int>> dailyData) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _LegendItem('Completed', Colors.green),
+            const SizedBox(width: 16),
+            _LegendItem('Pending', Colors.orange),
+            const SizedBox(width: 16),
+            _LegendItem('Rejected', Colors.red),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 120,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: dailyData.entries.map((entry) {
+              final maxValue = dailyData.values
+                  .map((e) =>
+                      (e['completed'] ?? 0) +
+                      (e['pending'] ?? 0) +
+                      (e['rejected'] ?? 0))
+                  .reduce((a, b) => a > b ? a : b)
+                  .clamp(1, double.infinity);
+
+              final completed = entry.value['completed'] ?? 0;
+              final pending = entry.value['pending'] ?? 0;
+              final rejected = entry.value['rejected'] ?? 0;
+              final total = completed + pending + rejected;
+
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+                        height: total > 0 ? (completed / maxValue) * 80 : 0,
+                        color: Colors.green,
+                      ),
+                      Container(
+                        height: total > 0 ? (pending / maxValue) * 80 : 0,
+                        color: Colors.orange,
+                      ),
+                      Container(
+                        height: total > 0 ? (rejected / maxValue) * 80 : 0,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        entry.key,
+                        style: const TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        '$total',
+                        style:
+                            const TextStyle(fontSize: 10, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _pieCard(List<_PieData> items) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: items.map((item) {
+            return Column(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: item.color,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${(item.value * 100).toInt()}%',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  item.label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '${item.count}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ],
+    ),
+  );
+}
+
+class _LegendItem extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _LegendItem(this.label, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+      ],
     );
   }
 }

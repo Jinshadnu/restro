@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:restro/domain/entities/task_entity.dart';
 import '../../models/task_model.dart';
 import '../../models/sop_model.dart';
@@ -9,7 +8,14 @@ class FirestoreService {
 
   // Task operations
   Future<void> createTask(TaskModel task) async {
-    await _firestore.collection('tasks').doc(task.id).set(task.toJson());
+    try {
+      print('Creating task in Firestore: ${task.id}');
+      await _firestore.collection('tasks').doc(task.id).set(task.toJson());
+      print('Task created successfully in Firestore');
+    } catch (e) {
+      print('Error creating task in Firestore: $e');
+      rethrow;
+    }
   }
 
   Future<void> createTaskFromData(Map<String, dynamic> data) async {
@@ -37,6 +43,19 @@ class FirestoreService {
     });
   }
 
+  Future<List<TaskModel>> getTasksForUser(String userId) async {
+    final snapshot = await _firestore
+        .collection('tasks')
+        .where('assignedTo', isEqualTo: userId)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      data['id'] = doc.id;
+      return TaskModel.fromJson(data);
+    }).toList();
+  }
+
   Stream<List<TaskModel>> getVerificationPendingTasks(String managerId) {
     return _firestore
         .collection('tasks')
@@ -54,6 +73,9 @@ class FirestoreService {
 
   Future<void> updateTaskStatus(String taskId, String status,
       {String? rejectionReason,
+      String? rejectionVoiceNoteUrl,
+      String? rejectionMarkedImageUrl,
+      DateTime? rejectedAt,
       String? photoUrl,
       DateTime? completedAt,
       DateTime? verifiedAt,
@@ -64,6 +86,18 @@ class FirestoreService {
 
     if (status == 'rejected' && rejectionReason != null) {
       updateData['rejectionReason'] = rejectionReason;
+    }
+
+    if (status == 'rejected') {
+      updateData['rejectedAt'] =
+          (rejectedAt ?? DateTime.now()).toIso8601String();
+      if (rejectionVoiceNoteUrl != null && rejectionVoiceNoteUrl.isNotEmpty) {
+        updateData['rejectionVoiceNoteUrl'] = rejectionVoiceNoteUrl;
+      }
+      if (rejectionMarkedImageUrl != null &&
+          rejectionMarkedImageUrl.isNotEmpty) {
+        updateData['rejectionMarkedImageUrl'] = rejectionMarkedImageUrl;
+      }
     }
 
     if (status == 'approved') {
@@ -84,6 +118,22 @@ class FirestoreService {
     }
 
     await _firestore.collection('tasks').doc(taskId).update(updateData);
+  }
+
+  Future<void> reworkTask(String taskId) async {
+    print('REWORK DEBUG: Starting rework for task $taskId');
+    await _firestore.collection('tasks').doc(taskId).update({
+      'status': 'pending',
+      'rejectionReason': null,
+      'rejectionVoiceNoteUrl': null,
+      'rejectionMarkedImageUrl': null,
+      'rejectedAt': null,
+      'photoUrl': null,
+      'completedAt': null,
+      'verifiedAt': null,
+      'isLate': false,
+    });
+    print('REWORK DEBUG: Task $taskId updated to pending status');
   }
 
   Future<void> assignTask(String taskId, String staffId) async {
@@ -150,6 +200,21 @@ class FirestoreService {
       data['id'] = doc.id;
       return SOPModel.fromJson(data);
     }
+
+    final fallbackFields = <String>['id', 'sopId', 'title'];
+    for (final field in fallbackFields) {
+      final snapshot = await _firestore
+          .collection('sops')
+          .where(field, isEqualTo: id)
+          .limit(1)
+          .get();
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        data['id'] = snapshot.docs.first.id;
+        return SOPModel.fromJson(data);
+      }
+    }
+
     return null;
   }
 
@@ -159,6 +224,75 @@ class FirestoreService {
 
   Future<void> deleteSOP(String id) async {
     await _firestore.collection('sops').doc(id).delete();
+  }
+
+  Future<Map<String, List<String>>> getMasterChecklist() async {
+    final candidates = <MapEntry<String, String>>[
+      const MapEntry<String, String>('master_checklists', 'default'),
+      const MapEntry<String, String>('masterChecklist', 'default'),
+      const MapEntry<String, String>('master_checklist', 'default'),
+      const MapEntry<String, String>('checklists', 'master'),
+    ];
+
+    Map<String, dynamic>? data;
+    for (final c in candidates) {
+      final doc = await _firestore.collection(c.key).doc(c.value).get();
+      if (doc.exists && doc.data() != null) {
+        data = doc.data();
+        break;
+      }
+    }
+
+    if (data == null) return <String, List<String>>{};
+
+    dynamic raw =
+        data['categories'] ?? data['items'] ?? data['checklist'] ?? data;
+
+    Map<String, List<String>> out = <String, List<String>>{};
+
+    if (raw is Map) {
+      for (final entry in raw.entries) {
+        final key = entry.key?.toString().trim();
+        if (key == null || key.isEmpty) continue;
+
+        final value = entry.value;
+        if (value is List) {
+          final items = value
+              .map((e) => e?.toString().trim())
+              .whereType<String>()
+              .where((s) => s.isNotEmpty)
+              .toList();
+          if (items.isNotEmpty) out[key] = items;
+        } else if (value is String) {
+          final items = value
+              .split(RegExp(r'\r?\n'))
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
+          if (items.isNotEmpty) out[key] = items;
+        }
+      }
+    } else if (raw is List) {
+      for (final item in raw) {
+        if (item is Map) {
+          final category = (item['category'] ?? item['title'] ?? item['name'])
+              ?.toString()
+              .trim();
+          if (category == null || category.isEmpty) continue;
+          final list = item['items'] ?? item['steps'] ?? item['checklist'];
+          if (list is List) {
+            final items = list
+                .map((e) => e?.toString().trim())
+                .whereType<String>()
+                .where((s) => s.isNotEmpty)
+                .toList();
+            if (items.isNotEmpty) out[category] = items;
+          }
+        }
+      }
+    }
+
+    return out;
   }
 
   Future<List<SOPModel>> getSOPsByFrequency(String frequency) async {
@@ -261,6 +395,10 @@ class FirestoreService {
   }
 
   Future<Map<String, dynamic>> getOwnerDashboard() async {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final tomorrowStart = todayStart.add(const Duration(days: 1));
+
     final tasksSnapshot = await _firestore.collection('tasks').get();
     final tasks = tasksSnapshot.docs.map((doc) {
       final data = doc.data();
@@ -268,44 +406,146 @@ class FirestoreService {
       return TaskModel.fromJson(data);
     }).toList();
 
-    final totalTasks = tasks.length;
-    final approvedTasks =
-        tasks.where((task) => task.status == TaskStatus.approved).length;
-    final compliance =
-        totalTasks > 0 ? (approvedTasks / totalTasks * 100) : 0.0;
+    final tasksDueUpToToday = tasks.where((task) {
+      final due = task.dueDate;
+      if (due == null) return false;
+      return due.isBefore(tomorrowStart);
+    }).toList();
 
-    // Calculate average verification time
-    final verifiedTasks = tasks
-        .where((task) => task.verifiedAt != null && task.completedAt != null)
-        .toList();
+    final totalDueToday = tasksDueUpToToday.length;
+    final approvedDueToday = tasksDueUpToToday
+        .where((task) =>
+            task.status == TaskStatus.approved ||
+            task.status == TaskStatus.completed)
+        .length;
+    final compliance =
+        totalDueToday > 0 ? (approvedDueToday / totalDueToday * 100) : 0.0;
+
+    // Average verification time for tasks verified today
+    final verifiedToday = tasks.where((task) {
+      if (task.verifiedAt == null || task.completedAt == null) return false;
+      final v = task.verifiedAt!;
+      return !v.isBefore(todayStart) && v.isBefore(tomorrowStart);
+    }).toList();
 
     double avgVerificationTime = 0.0;
-    if (verifiedTasks.isNotEmpty) {
-      final totalTime = verifiedTasks.fold<double>(
+    if (verifiedToday.isNotEmpty) {
+      final totalTime = verifiedToday.fold<double>(
         0.0,
         (sum, task) =>
             sum +
-            task.verifiedAt!.difference(task.completedAt!).inHours.toDouble(),
+            task.verifiedAt!.difference(task.completedAt!).inMinutes.toDouble(),
       );
-      avgVerificationTime = totalTime / verifiedTasks.length;
+      // Keep returning hours as the UI expects "hrs"
+      avgVerificationTime = (totalTime / verifiedToday.length) / 60.0;
     }
 
-    // Most frequently failed task
-    final rejectedTasks =
-        tasks.where((task) => task.status == TaskStatus.rejected).toList();
+    // Most frequently failed task today (manager rejection or owner override)
+    final rejectedToday = tasks.where((task) {
+      final managerRejectedAt = task.rejectedAt;
+      final ownerRejectedAt = task.ownerRejectionAt;
+      final rejectedAt = ownerRejectedAt ?? managerRejectedAt;
+      if (rejectedAt == null) return false;
+      return !rejectedAt.isBefore(todayStart) &&
+          rejectedAt.isBefore(tomorrowStart);
+    }).toList();
     final taskFailures = <String, int>{};
-    for (var task in rejectedTasks) {
+    for (var task in rejectedToday) {
       taskFailures[task.title] = (taskFailures[task.title] ?? 0) + 1;
     }
 
-    final mostFailedTask = taskFailures.entries.isNotEmpty
-        ? taskFailures.entries.reduce((a, b) => a.value > b.value ? a : b).key
-        : 'None';
+    final mostFailedEntry = taskFailures.entries.isNotEmpty
+        ? taskFailures.entries.reduce((a, b) => a.value > b.value ? a : b)
+        : null;
+    final mostFailedTask = mostFailedEntry?.key ?? 'None';
+    final mostFailedTaskCount = mostFailedEntry?.value ?? 0;
+
+    final completedToday = tasks.where((task) {
+      if (task.completedAt == null) return false;
+      final c = task.completedAt!;
+      final isCompletedStatus = task.status == TaskStatus.completed ||
+          task.status == TaskStatus.approved;
+      return isCompletedStatus &&
+          !c.isBefore(todayStart) &&
+          c.isBefore(tomorrowStart);
+    }).length;
+
+    final pendingTasks = tasksDueUpToToday
+        .where((task) =>
+            task.status == TaskStatus.pending ||
+            task.status == TaskStatus.inProgress)
+        .length;
+
+    final verificationPending = tasksDueUpToToday
+        .where((task) => task.status == TaskStatus.verificationPending)
+        .length;
+
+    final attendanceSnapshot = await _firestore
+        .collection('attendance')
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    final attendancePendingApprovals = attendanceSnapshot.docs.length;
+
+    DateTime? _parseScoreDate(dynamic value) {
+      if (value == null) return null;
+      if (value is DateTime) return value;
+      final type = value.runtimeType.toString();
+      if (type == 'Timestamp' || type.endsWith('Timestamp')) {
+        try {
+          return (value as dynamic).toDate() as DateTime;
+        } catch (_) {
+          return null;
+        }
+      }
+      if (value is String) {
+        try {
+          return DateTime.parse(value);
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    }
+
+    final allDailyScoresSnapshot =
+        await _firestore.collection('daily_scores').get();
+    int scoreCount = 0;
+    int totalScore = 0;
+    for (final doc in allDailyScoresSnapshot.docs) {
+      final data = doc.data();
+      final date = _parseScoreDate(data['date']);
+      if (date == null) continue;
+      if (date.isBefore(todayStart) || !date.isBefore(tomorrowStart)) continue;
+
+      final v = data['finalScore'];
+      int? score;
+      if (v is int) score = v;
+      if (v is num) score = v.toInt();
+      if (score == null) continue;
+
+      scoreCount += 1;
+      totalScore += score;
+    }
+
+    double shopDailyScore = 100.0;
+    if (scoreCount > 0) {
+      shopDailyScore = totalScore / scoreCount;
+    } else {
+      shopDailyScore = compliance.clamp(0.0, 100.0);
+    }
 
     return {
       'compliance': compliance,
       'avgVerificationTime': avgVerificationTime,
       'mostFailedTask': mostFailedTask,
+      'mostFailedTaskCount': mostFailedTaskCount,
+      'completedToday': completedToday,
+      'pendingTasks': pendingTasks,
+      'verificationPending': verificationPending,
+      'attendancePendingApprovals': attendancePendingApprovals,
+      'shopDailyScore': shopDailyScore,
+      'shopDailyScoreCount': scoreCount,
     };
   }
 
@@ -416,6 +656,36 @@ class FirestoreService {
     return null;
   }
 
+  Future<void> upsertUserFcmToken({
+    required String userId,
+    required String token,
+  }) async {
+    if (userId.isEmpty || token.isEmpty) return;
+    await _firestore.collection('users').doc(userId).set(
+      {
+        'fcm_tokens': FieldValue.arrayUnion([token]),
+        'fcm_token_updated_at': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
+  Future<List<String>> getUserFcmTokens(String userId) async {
+    if (userId.isEmpty) return [];
+    final doc = await _firestore.collection('users').doc(userId).get();
+    final data = doc.data();
+    final raw = data?['fcm_tokens'];
+    if (raw is List) {
+      return raw.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    }
+    final single = data?['fcm_token'];
+    if (single != null) {
+      final t = single.toString();
+      return t.isNotEmpty ? [t] : [];
+    }
+    return [];
+  }
+
   Future<void> syncAttendance(Map<String, dynamic> data) async {
     await _firestore
         .collection('attendance')
@@ -509,8 +779,13 @@ class FirestoreService {
     });
   }
 
-  Future<void> verifyAttendance(String attendanceId, bool approved,
-      {String? rejectionReason, String? verifiedBy}) async {
+  Future<void> verifyAttendance(
+    String attendanceId,
+    bool approved, {
+    String? rejectionReason,
+    String? rejectionVoiceNoteUrl,
+    String? verifiedBy,
+  }) async {
     final updateData = <String, dynamic>{
       'status': approved ? 'verified' : 'rejected',
       'verification_status': approved ? 'approved' : 'rejected',
@@ -521,13 +796,45 @@ class FirestoreService {
       updateData['verifiedBy'] = verifiedBy;
     }
 
-    if (!approved && rejectionReason != null) {
-      updateData['rejectionReason'] = rejectionReason;
+    if (!approved) {
+      updateData['rejectedAt'] = DateTime.now().toIso8601String();
+      if (rejectionReason != null) {
+        updateData['rejectionReason'] = rejectionReason;
+      }
+      if (rejectionVoiceNoteUrl != null) {
+        updateData['rejectionVoiceNoteUrl'] = rejectionVoiceNoteUrl;
+      }
     }
 
     await _firestore
         .collection('attendance')
         .doc(attendanceId)
         .update(updateData);
+  }
+
+  // Staff Roles operations
+  Future<List<String>> getStaffRoles() async {
+    final snapshot = await _firestore.collection('staff_roles').get();
+    return snapshot.docs
+        .map((doc) => doc.data()['name']?.toString().trim())
+        .whereType<String>()
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  Future<void> addStaffRole(String name, {String? createdBy}) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) throw ArgumentError('Role name cannot be empty');
+    final docId = trimmed.toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+    await _firestore.collection('staff_roles').doc(docId).set({
+      'name': trimmed,
+      'createdAt': FieldValue.serverTimestamp(),
+      if (createdBy != null) 'createdBy': createdBy,
+    });
+  }
+
+  Future<void> deleteStaffRole(String name) async {
+    final docId = name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+    await _firestore.collection('staff_roles').doc(docId).delete();
   }
 }

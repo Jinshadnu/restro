@@ -76,7 +76,7 @@ class StatusOverviewCard extends StatelessWidget {
               Expanded(
                 child: _buildTile(
                   icon: Icons.cancel,
-                  title: 'Cancelled',
+                  title: 'Rejected',
                   count: cancelled,
                   color: AppTheme.error,
                 ),

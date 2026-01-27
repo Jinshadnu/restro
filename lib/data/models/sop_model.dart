@@ -16,13 +16,52 @@ class SOPModel extends SOPEntity {
     super.updatedAt,
   });
 
+  static List<String> _parseSteps(Map<String, dynamic> json) {
+    dynamic raw = json['steps'];
+
+    raw ??= json['sopSteps'];
+    raw ??= json['checklist'];
+    raw ??= json['instructions'];
+    raw ??= json['items'];
+
+    if (raw == null) return <String>[];
+
+    if (raw is List) {
+      return raw
+          .map((e) {
+            if (e == null) return null;
+            if (e is String) return e;
+            if (e is Map) {
+              final text = e['text'] ?? e['title'] ?? e['step'] ?? e['name'];
+              return text?.toString();
+            }
+            return e.toString();
+          })
+          .whereType<String>()
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+
+    if (raw is String) {
+      final trimmed = raw.trim();
+      if (trimmed.isEmpty) return <String>[];
+      return trimmed
+          .split(RegExp(r'\r?\n'))
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+
+    return <String>[];
+  }
+
   factory SOPModel.fromJson(Map<String, dynamic> json) {
     return SOPModel(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      steps:
-          json['steps'] != null ? List<String>.from(json['steps']) : <String>[],
+      steps: _parseSteps(json),
       frequency: _frequencyFromString(json['frequency'] ?? 'daily'),
       requiresPhoto: json['requiresPhoto'] ?? false,
       isCritical: json['isCritical'] ?? false,

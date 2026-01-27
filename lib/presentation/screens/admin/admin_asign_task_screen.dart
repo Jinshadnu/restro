@@ -303,7 +303,7 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
         const SnackBar(content: Text("Task Assigned Successfully!")),
       );
 
-      Navigator.pop(context);
+      Navigator.of(context).maybePop();
     }
   }
 }

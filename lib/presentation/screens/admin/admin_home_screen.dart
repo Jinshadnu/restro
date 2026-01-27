@@ -170,7 +170,7 @@ class AdminHomeScreen extends StatelessWidget {
                               break;
                             case 'verificationPending':
                               statusColor = Colors.blue;
-                              status = 'Verify';
+                              status = 'Verification Pending';
                               break;
                             case 'approved':
                               statusColor = Colors.green;

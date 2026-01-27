@@ -10,6 +10,8 @@ class CustomeTextField extends StatelessWidget {
   final TextEditingController? controller;
   final Widget? suffixIcon;
   final int? maxLine;
+  final bool? obscureText;
+  final VoidCallback? onToggleVisibility;
 
   const CustomeTextField(
       {super.key,
@@ -20,7 +22,9 @@ class CustomeTextField extends StatelessWidget {
       this.validator,
       this.controller,
       this.suffixIcon,
-      this.maxLine});
+      this.maxLine,
+      this.obscureText,
+      this.onToggleVisibility});
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +41,7 @@ class CustomeTextField extends StatelessWidget {
           ]),
       child: TextFormField(
         controller: controller,
-        obscureText: isPassword,
+        obscureText: obscureText ?? isPassword,
         keyboardType: keyboardType,
         validator: validator,
         maxLines: maxLine ?? 1,
@@ -51,12 +55,14 @@ class CustomeTextField extends StatelessWidget {
               color: AppTheme.primaryColor,
             ),
             suffixIcon: suffixIcon ??
-                (isPassword
+                (isPassword && onToggleVisibility != null
                     ? IconButton(
-                        onPressed: () {},
+                        onPressed: onToggleVisibility,
                         icon: Icon(
-                          Icons.visibility_outlined,
-                          color: AppTheme.primaryColor.withOpacity(0.5),
+                          obscureText ?? false
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: AppTheme.primaryColor.withOpacity(0.7),
                         ))
                     : null),
             border: OutlineInputBorder(

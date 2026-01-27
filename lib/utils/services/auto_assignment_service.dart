@@ -99,9 +99,16 @@ class AutoAssignmentService {
                 assignedBy: assignedBy.id,
                 status: TaskStatus.pending,
                 frequency: sop.frequency,
+                grade: sop.isCritical == true
+                    ? TaskGrade.critical
+                    : TaskGrade.normal,
                 dueDate: dueDate,
                 createdAt: DateTime.now(),
                 requiresPhoto: sop.requiresPhoto,
+                // New owner override fields (null for new tasks)
+                ownerRejectionAt: null,
+                ownerRejectionReason: null,
+                rejectedBy: null,
               );
 
               // Save to local database first
@@ -159,9 +166,14 @@ class AutoAssignmentService {
         assignedBy: assignedBy,
         status: TaskStatus.pending,
         frequency: sop.frequency,
+        grade: sop.isCritical == true ? TaskGrade.critical : TaskGrade.normal,
         dueDate: dueDate,
         createdAt: DateTime.now(),
         requiresPhoto: sop.requiresPhoto,
+        // New owner override fields (null for new tasks)
+        ownerRejectionAt: null,
+        ownerRejectionReason: null,
+        rejectedBy: null,
       );
 
       tasks.add(task);
@@ -178,9 +190,14 @@ class AutoAssignmentService {
         assignedBy: assignedBy,
         status: TaskStatus.pending,
         frequency: sop.frequency,
+        grade: sop.isCritical == true ? TaskGrade.critical : TaskGrade.normal,
         dueDate: dueDate,
         createdAt: DateTime.now(),
         requiresPhoto: sop.requiresPhoto,
+        // New owner override fields (null for new tasks)
+        ownerRejectionAt: null,
+        ownerRejectionReason: null,
+        rejectedBy: null,
       );
       tasks.add(task);
     }

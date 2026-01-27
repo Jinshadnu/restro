@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:restro/presentation/widgets/custom_appbar.dart';
-import 'package:restro/utils/theme/theme.dart';
-import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
+import 'package:restro/utils/theme/theme.dart';
+import 'package:restro/utils/navigation/app_routes.dart';
 
 class StaffProfileScreen extends StatelessWidget {
   const StaffProfileScreen({super.key});
@@ -14,228 +13,420 @@ class StaffProfileScreen extends StatelessWidget {
     final currentUser = auth.currentUser;
 
     return Scaffold(
-      backgroundColor: AppTheme.backGroundColor,
-      appBar: const CustomAppbar(title: "My Profile"),
+      backgroundColor: const Color(0xFFF8F9FA), // Slightly off-white background
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: AppTheme.primaryColor,
+        elevation: 0,
+        title: const Text("My Profile",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            /// 🔴 TOP PROFILE HEADER
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              color: AppTheme.primaryColor,
-              child: Column(
-                children: [
-                  // Avatar
-                  const CircleAvatar(
-                    radius: 45,
-                    backgroundColor: Colors.white,
-                    child: CircleAvatar(
-                      radius: 42,
-                      backgroundImage: AssetImage("assets/images/avatar.png"),
+            // 1. Header with Curve & Profile Pic
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                // Background Gradient
+                Container(
+                  height: 260,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFF8F9FA),
+                        Color(0xFFF8F9FA),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(32),
                     ),
                   ),
-
-                  const SizedBox(height: 12),
-
-                  // Staff Name
-                  Text(
-                    currentUser?.name ?? "Staff",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                ),
+                // Profile Details (Name & Role) inside header
+                Positioned(
+                  top: 110,
+                  child: Column(
+                    children: [
+                      Stack(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.12),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: const CircleAvatar(
+                              radius: 50,
+                              backgroundImage:
+                                  AssetImage("assets/images/avatar.png"),
+                            ),
+                          ),
+                          // Edit Badge
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        currentUser?.name ?? "Staff Member",
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          (currentUser?.role ?? "Staff").toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-
-                  // Staff Role
-                  Text(
-                    (currentUser != null && currentUser.role.isNotEmpty)
-                        ? currentUser.role
-                        : "Staff",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
 
-            /// ⚪ WHITE CARD (Profile Info)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 12,
-                    offset: Offset(0, 4),
-                  )
-                ],
-              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Personal Information",
+                  // Section Title
+                  Text(
+                    "ACCOUNT INFORMATION",
                     style: TextStyle(
-                      fontSize: 18,
+                      color: Colors.grey[600],
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _infoRow("Email", currentUser?.email ?? "N/A"),
-                  _infoRow("Phone", currentUser?.phone ?? "N/A"),
-                  _infoRow(
-                    "Role",
-                    (currentUser != null && currentUser.role.isNotEmpty)
-                        ? currentUser.role
-                        : "staff",
+
+                  // Info Card
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.08),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _buildProfileItem(
+                          icon: Icons.email_outlined,
+                          title: "Email",
+                          value: currentUser?.email ?? "N/A",
+                          showDivider: true,
+                        ),
+                        _buildProfileItem(
+                          icon: Icons.phone_outlined,
+                          title: "Phone",
+                          value: currentUser?.phone ?? "N/A",
+                          showDivider: true,
+                        ),
+                        _buildProfileItem(
+                          icon: Icons.badge_outlined,
+                          title: "Employee ID",
+                          value:
+                              "#${currentUser?.id.substring(0, 6).toUpperCase() ?? "0000"}",
+                          showDivider: false,
+                        ),
+                      ],
+                    ),
                   ),
+
+                  const SizedBox(height: 32),
+                  Text(
+                    "SETTINGS",
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Settings Card
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.08),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _buildSettingsItem(
+                          icon: Icons.lock_outline_rounded,
+                          title: "Change Password",
+                          onTap: () => Navigator.pushNamed(
+                              context, AppRoutes.changePassword),
+                          showDivider: true,
+                        ),
+                        _buildSettingsItem(
+                          icon: Icons.help_outline_rounded,
+                          title: "Help & Support",
+                          onTap: () => Navigator.pushNamed(
+                              context, AppRoutes.helpSupport),
+                          showDivider: true,
+                        ),
+                        _buildSettingsItem(
+                          icon: Icons.info_outline_rounded,
+                          title: "About App",
+                          onTap: () =>
+                              Navigator.pushNamed(context, AppRoutes.about),
+                          showDivider: false,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Logout Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => _confirmLogout(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: const Color(0xFFFEE2E2), // Light red
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.logout_rounded, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text(
+                            "Sign Out",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Center(
+                    child: Text(
+                      "Version 1.0.2",
+                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            /// ⚙ SETTINGS OPTIONS
-            _settingsTile(
-              icon: Icons.lock_outline,
-              title: "Change Password",
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.changePassword);
-              },
-            ),
-
-            _settingsTile(
-              icon: Icons.notifications_none,
-              title: "Notifications",
-              onTap: () {},
-            ),
-
-            _settingsTile(
-              icon: Icons.help_outline,
-              title: "Help & Support",
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.helpSupport);
-              },
-            ),
-
-            _settingsTile(
-              icon: Icons.info_outline,
-              title: "About App",
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.about);
-              },
-            ),
-
-            _settingsTile(
-              icon: Icons.logout,
-              title: "Logout",
-              onTap: () async {
-                final auth =
-                    Provider.of<AuthenticationProvider>(context, listen: false);
-
-                // Show confirmation dialog
-                final confirm = await showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: const Text("Logout"),
-                      content: const Text("Are you sure you want to logout?"),
-                      actions: [
-                        TextButton(
-                          child: const Text("Cancel"),
-                          onPressed: () => Navigator.pop(context, false),
-                        ),
-                        TextButton(
-                          child: const Text("Logout"),
-                          onPressed: () => Navigator.pop(context, true),
-                        ),
-                      ],
-                    );
-                  },
-                );
-
-                if (confirm == true) {
-                  await auth.logout();
-
-                  // Navigate to Login Screen
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/login',
-                    (route) => false,
-                  );
-                }
-              },
-            ),
-
-            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  /// ----------- Reusable Info Row -------------
-  Widget _infoRow(String title, String value) {
+  Widget _buildProfileItem({
+    required IconData icon,
+    required String title,
+    required String value,
+    required bool showDivider,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      child: Column(
         children: [
-          Text(
-            title,
-            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: AppTheme.primaryColor, size: 22),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        value,
+                        style: TextStyle(
+                          color: Colors.grey[900],
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
+          if (showDivider)
+            Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
         ],
       ),
     );
   }
 
-  /// ----------- Settings Tile -------------
-  Widget _settingsTile(
-      {required IconData icon,
-      required String title,
-      required VoidCallback onTap}) {
-    return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          )
-        ],
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          radius: 20,
-          backgroundColor: AppTheme.primaryColor.withOpacity(0.15),
-          child: Icon(icon, color: AppTheme.primaryColor),
-        ),
-        title: Text(title),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+  Widget _buildSettingsItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    required bool showDivider,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(20), // Matches container
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(icon, color: Colors.grey[700], size: 24),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: Colors.grey[900],
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded,
+                        color: Colors.grey[400], size: 20),
+                  ],
+                ),
+              ),
+              if (showDivider)
+                Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final auth = Provider.of<AuthenticationProvider>(context, listen: false);
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to sign out?"),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("Sign Out"),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await auth.logout();
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    }
   }
 }

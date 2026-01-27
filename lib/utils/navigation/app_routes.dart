@@ -31,6 +31,7 @@ class AppRoutes {
   static const String adminDashboard = '/admin-dashboard';
   static const String managerDashboard = '/manager-dashboard';
   static const String staffDashboard = '/staff-dashboard';
+  static const String staffHome = '/staff_home';
   static const String taskDetails = '/taskDetails';
   static const String startTask = '/startTask';
   static const String changePassword = '/change_password';
@@ -64,6 +65,9 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const RegisterScreen());
 
       case staffDashboard:
+        return MaterialPageRoute(builder: (_) => const StaffDashboard());
+
+      case staffHome:
         return MaterialPageRoute(builder: (_) => const StaffDashboard());
 
       case adminDashboard:
@@ -153,8 +157,17 @@ class AppRoutes {
         );
 
       case attendanceVerification:
+        final args = settings.arguments;
+        String? attendanceId;
+        if (args is Map) {
+          final raw = args['attendanceId'];
+          if (raw != null) {
+            attendanceId = raw.toString();
+          }
+        }
         return MaterialPageRoute(
-          builder: (_) => const AttendanceVerificationScreen(),
+          builder: (_) =>
+              AttendanceVerificationScreen(attendanceId: attendanceId),
         );
 
       case registerStaff:

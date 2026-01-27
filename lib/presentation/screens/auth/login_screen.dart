@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final identifierCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +139,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           label: 'Password',
                           prefixICon: Icons.lock_outline,
                           isPassword: true,
+                          obscureText: _obscurePassword,
+                          onToggleVisibility: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Enter your password';

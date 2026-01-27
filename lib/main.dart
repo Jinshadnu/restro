@@ -11,6 +11,7 @@ import 'package:restro/presentation/providers/admin_profile_provider.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
 import 'package:restro/presentation/providers/change_password_provider.dart';
 import 'package:restro/presentation/providers/completed_task_provider.dart';
+import 'package:restro/presentation/providers/daily_score_provider.dart';
 import 'package:restro/presentation/providers/sop_provider.dart';
 import 'package:restro/presentation/providers/task_details_provider.dart';
 import 'package:restro/presentation/providers/task_provider.dart';
@@ -22,6 +23,8 @@ import 'package:restro/utils/theme/theme.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +48,7 @@ Future<void> main() async {
   );
 
   // Initialize notification service (local notifications only)
-  await NotificationService().initialize();
+  await NotificationService().initialize(navigatorKey: rootNavigatorKey);
 
   // Initialize local database
   await DatabaseHelper.instance.database;
@@ -78,6 +81,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => AdminProfileProvider()),
         ChangeNotifierProvider(create: (_) => CompletedTaskProvider()),
         ChangeNotifierProvider(create: (_) => ChangePasswordProvider()),
+        ChangeNotifierProvider(create: (_) => DailyScoreProvider()),
         ChangeNotifierProvider(
           create: (_) => TaskDetailsProvider(
             title: "Kitchen Cleaning",
@@ -107,6 +111,7 @@ class MyApp extends StatelessWidget {
       title: 'Restro App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      navigatorKey: rootNavigatorKey,
       initialRoute: '/',
       onGenerateRoute: AppRoutes.generateRoute,
     );

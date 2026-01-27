@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:restro/data/models/user_model.dart';
 import 'package:restro/data/repositories/auth_repository.dart';
 import 'package:restro/data/datasources/remote/firestore_service.dart';
+import 'package:restro/utils/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthenticationProvider extends ChangeNotifier {
@@ -90,6 +91,7 @@ class AuthenticationProvider extends ChangeNotifier {
       );
 
       await saveUserSession(currentUser!);
+      await NotificationService().registerFcmTokenForUser(currentUser!.id);
 
       setLoading(false);
       notifyListeners();
@@ -127,6 +129,7 @@ class AuthenticationProvider extends ChangeNotifier {
       );
 
       await saveUserSession(currentUser!);
+      await NotificationService().registerFcmTokenForUser(currentUser!.id);
 
       setLoading(false);
       notifyListeners();
@@ -157,6 +160,7 @@ class AuthenticationProvider extends ChangeNotifier {
           selfieVerifiedAt: userEntity.selfieVerifiedAt);
 
       await saveUserSession(currentUser!);
+      await NotificationService().registerFcmTokenForUser(currentUser!.id);
 
       setLoading(false);
       notifyListeners();

@@ -22,7 +22,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 4, // Increment version for task fields migration
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -51,6 +51,21 @@ class DatabaseHelper {
               'CREATE INDEX IF NOT EXISTS idx_attendance_user_dateStr ON attendance(userId, dateStr)');
           await db.execute(
               'CREATE INDEX IF NOT EXISTS idx_attendance_synced ON attendance(synced)');
+        }
+
+        if (oldVersion < 4) {
+          // Add rejection voice note fields for tasks (safe if columns already exist)
+          try {
+            await db.execute(
+              'ALTER TABLE tasks ADD COLUMN rejectionVoiceNoteUrl TEXT',
+            );
+          } catch (_) {}
+
+          try {
+            await db.execute(
+              'ALTER TABLE tasks ADD COLUMN rejectedAt TEXT',
+            );
+          } catch (_) {}
         }
       },
     );
@@ -96,12 +111,21 @@ class DatabaseHelper {
         assignedBy TEXT NOT NULL,
         status TEXT NOT NULL,
         frequency TEXT NOT NULL,
+        grade TEXT NOT NULL DEFAULT 'normal',
         dueDate TEXT,
         completedAt TEXT,
         photoUrl TEXT,
         rejectionReason TEXT,
+        rejectionVoiceNoteUrl TEXT,
+        rejectedAt TEXT,
         createdAt TEXT NOT NULL,
         verifiedAt TEXT,
+        requiresPhoto INTEGER NOT NULL DEFAULT 0,
+        isLate INTEGER NOT NULL DEFAULT 0,
+        reward REAL,
+        ownerRejectionAt TEXT,
+        ownerRejectionReason TEXT,
+        rejectedBy TEXT,
         synced INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (sopId) REFERENCES sops (id)
       )
@@ -296,18 +320,27 @@ class DatabaseHelper {
         'id': task.id,
         'title': task.title,
         'description': task.description,
-        'sopid': task.sopid,
+        'sopId': task.sopid,
         'assignedTo': task.assignedTo,
         'assignedBy': task.assignedBy,
         'status': task.status.toString().split('.').last,
         'frequency': task.frequency.toString().split('.').last,
+        'grade': task.grade.toString().split('.').last,
         'dueDate': task.dueDate?.toIso8601String(),
         'completedAt': task.completedAt?.toIso8601String(),
         'photoUrl': task.photoUrl,
         'rejectionReason': task.rejectionReason,
+        'rejectionVoiceNoteUrl': task.rejectionVoiceNoteUrl,
+        'rejectedAt': task.rejectedAt?.toIso8601String(),
         'createdAt': task.createdAt.toIso8601String(),
         'verifiedAt': task.verifiedAt?.toIso8601String(),
-        'synced': 0, // Not synced yet
+        'requiresPhoto': task.requiresPhoto ? 1 : 0,
+        'isLate': task.isLate ? 1 : 0,
+        'reward': task.reward,
+        'ownerRejectionAt': task.ownerRejectionAt?.toIso8601String(),
+        'ownerRejectionReason': task.ownerRejectionReason,
+        'rejectedBy': task.rejectedBy,
+        'synced': 1,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -353,6 +386,8 @@ class DatabaseHelper {
     String taskId,
     String status, {
     String? rejectionReason,
+    String? rejectionVoiceNoteUrl,
+    DateTime? rejectedAt,
     String? photoUrl,
     DateTime? completedAt,
     DateTime? verifiedAt,
@@ -365,6 +400,12 @@ class DatabaseHelper {
 
     if (rejectionReason != null) {
       updateData['rejectionReason'] = rejectionReason;
+    }
+    if (rejectionVoiceNoteUrl != null) {
+      updateData['rejectionVoiceNoteUrl'] = rejectionVoiceNoteUrl;
+    }
+    if (rejectedAt != null) {
+      updateData['rejectedAt'] = rejectedAt.toIso8601String();
     }
     if (photoUrl != null) {
       updateData['photoUrl'] = photoUrl;
@@ -415,12 +456,21 @@ class DatabaseHelper {
       'assignedBy': map['assignedBy'],
       'status': map['status'],
       'frequency': map['frequency'],
+      'grade': map['grade'] ?? 'normal', // Add grade field
       'dueDate': map['dueDate'],
       'completedAt': map['completedAt'],
       'photoUrl': map['photoUrl'],
       'rejectionReason': map['rejectionReason'],
+      'rejectionVoiceNoteUrl': map['rejectionVoiceNoteUrl'],
+      'rejectedAt': map['rejectedAt'],
       'createdAt': map['createdAt'],
       'verifiedAt': map['verifiedAt'],
+      'requiresPhoto': map['requiresPhoto'] == 1,
+      'isLate': map['isLate'] == 1,
+      'reward': map['reward'],
+      'ownerRejectionAt': map['ownerRejectionAt'],
+      'ownerRejectionReason': map['ownerRejectionReason'],
+      'rejectedBy': map['rejectedBy'],
     });
   }
 

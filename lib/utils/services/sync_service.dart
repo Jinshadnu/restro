@@ -64,6 +64,8 @@ class SyncService {
               task.id,
               task.status.toString().split('.').last,
               rejectionReason: task.rejectionReason,
+              rejectionVoiceNoteUrl: task.rejectionVoiceNoteUrl,
+              rejectedAt: task.rejectedAt,
               photoUrl: task.photoUrl,
               completedAt: task.completedAt,
               verifiedAt: task.verifiedAt,

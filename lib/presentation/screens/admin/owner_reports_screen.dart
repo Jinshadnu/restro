@@ -16,216 +16,487 @@ class OwnerReportsScreen extends StatelessWidget {
         backgroundColor: AppTheme.primaryColor,
         title: const Text(
           'Reports',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
+        elevation: 0,
       ),
-      body: StreamBuilder(
-        stream: _firestoreService.getAllTasks(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          final tasks = snapshot.data ?? [];
-
-          final total = tasks.length;
-          final completed = tasks
-              .where((t) => t.status.toString().contains('approved'))
-              .length;
-          final pending = tasks
-              .where((t) => t.status.toString().contains('pending'))
-              .length;
-          final verification = tasks
-              .where((t) => t.status.toString().contains('verification'))
-              .length;
-          final rejected = tasks
-              .where((t) => t.status.toString().contains('rejected'))
-              .length;
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now()),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
-                  ),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Premium header card
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryColor,
+                    AppTheme.primaryColor.withOpacity(0.85),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                const SizedBox(height: 14),
-                _sectionTitle('Overall Task Summary'),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.black.withOpacity(0.05)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 14,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
-                  child: Column(
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _statTile(
-                              title: 'Total',
-                              value: total,
-                              color: AppTheme.primaryColor,
-                              icon: Icons.list_alt,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _statTile(
-                              title: 'Completed',
-                              value: completed,
-                              color: AppTheme.success,
-                              icon: Icons.check_circle,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _statTile(
-                              title: 'Pending',
-                              value: pending,
-                              color: AppTheme.warning,
-                              icon: Icons.timelapse,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _statTile(
-                              title: 'Verify',
-                              value: verification,
-                              color: AppTheme.tertiaryColor,
-                              icon: Icons.verified_outlined,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _statTile(
-                              title: 'Rejected',
-                              value: rejected,
-                              color: AppTheme.error,
-                              icon: Icons.cancel,
-                            ),
-                          ),
-                          const Expanded(child: SizedBox()),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _sectionTitle('Recent Tasks'),
-                const SizedBox(height: 10),
-                if (tasks.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24.0),
-                      child: Text('No tasks yet'),
-                    ),
-                  )
-                else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: tasks.length > 10 ? 10 : tasks.length,
-                    itemBuilder: (context, index) {
-                      final task = tasks[index];
-                      final statusText = task.status.toString().split('.').last;
-                      final statusColor = _statusColor(task.status.toString());
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.white.withOpacity(0.18),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                        ),
+                        child: const Icon(
+                          Icons.analytics,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Analytics & Reports',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              DateFormat('EEEE, MMMM d, yyyy')
+                                  .format(DateTime.now()),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
-                        child: ListTile(
-                          title: Text(
-                            task.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
-                            ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Content
+            Expanded(
+              child: StreamBuilder(
+                stream: _firestoreService.getAllTasks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  final tasks = snapshot.data ?? [];
+
+                  final total = tasks.length;
+                  final completed = tasks
+                      .where((t) => t.status.toString().contains('approved'))
+                      .length;
+                  final pending = tasks
+                      .where((t) => t.status.toString().contains('pending'))
+                      .length;
+                  final verification = tasks
+                      .where(
+                          (t) => t.status.toString().contains('verification'))
+                      .length;
+                  final rejected = tasks
+                      .where((t) => t.status.toString().contains('rejected'))
+                      .length;
+
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Enhanced section header
+                        _buildSectionHeader(
+                            'Overall Task Summary', Icons.bar_chart),
+                        const SizedBox(height: 12),
+
+                        // Enhanced stats container
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: Colors.black.withOpacity(0.04)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              DateFormat('MMM d, yyyy  •  h:mm a')
-                                  .format(task.createdAt),
-                              style: const TextStyle(
-                                color: AppTheme.textSecondary,
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _enhancedStatTile(
+                                      title: 'Total',
+                                      value: total,
+                                      color: AppTheme.primaryColor,
+                                      icon: Icons.list_alt,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _enhancedStatTile(
+                                      title: 'Completed',
+                                      value: completed,
+                                      color: Colors.green,
+                                      icon: Icons.check_circle,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.10),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color: statusColor.withOpacity(0.25),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _enhancedStatTile(
+                                      title: 'Pending',
+                                      value: pending,
+                                      color: Colors.orange,
+                                      icon: Icons.timelapse,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _enhancedStatTile(
+                                      title: 'Verify',
+                                      value: verification,
+                                      color: Colors.purple,
+                                      icon: Icons.verified_outlined,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            child: Text(
-                              statusText,
-                              style: TextStyle(
-                                color: statusColor,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _enhancedStatTile(
+                                      title: 'Rejected',
+                                      value: rejected,
+                                      color: Colors.red,
+                                      icon: Icons.cancel,
+                                    ),
+                                  ),
+                                  const Expanded(child: SizedBox()),
+                                ],
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-              ],
+
+                        const SizedBox(height: 28),
+
+                        // Enhanced section header
+                        _buildSectionHeader(
+                            'Recent Tasks', Icons.recent_actors),
+                        const SizedBox(height: 12),
+
+                        if (tasks.isEmpty)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32.0),
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: Colors.black.withOpacity(0.04)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.04),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.task_alt_outlined,
+                                      size: 64,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No tasks yet',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Tasks will appear here once created',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade500,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: tasks.length > 10 ? 10 : tasks.length,
+                            itemBuilder: (context, index) {
+                              final task = tasks[index];
+                              return _taskCard(task);
+                            },
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
 
+  // Enhanced section header widget
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppTheme.primaryColor, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Enhanced stat tile widget
+  Widget _enhancedStatTile({
+    required String title,
+    required int value,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const Spacer(),
+              Text(
+                value.toString(),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced task card widget
+  Widget _taskCard(task) {
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+
+    if (task.status.toString().contains('approved')) {
+      statusColor = Colors.green;
+      statusText = 'Completed';
+      statusIcon = Icons.check_circle;
+    } else if (task.status.toString().contains('pending')) {
+      statusColor = Colors.orange;
+      statusText = 'Pending';
+      statusIcon = Icons.timelapse;
+    } else if (task.status.toString().contains('verification')) {
+      statusColor = Colors.purple;
+      statusText = 'Verification';
+      statusIcon = Icons.verified_outlined;
+    } else if (task.status.toString().contains('rejected')) {
+      statusColor = Colors.red;
+      statusText = 'Rejected';
+      statusIcon = Icons.cancel;
+    } else {
+      statusColor = Colors.grey;
+      statusText = 'Unknown';
+      statusIcon = Icons.help;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.04)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: statusColor.withOpacity(0.2)),
+                  ),
+                  child: Icon(statusIcon, color: statusColor, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title ?? 'Untitled Task',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        task.assignedTo ?? 'Unassigned',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================
+  //            Legacy Widgets (keep for compatibility)
+  // ===========================================================
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: AppTheme.textPrimary,
+      ),
     );
   }
 

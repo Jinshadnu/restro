@@ -5,7 +5,6 @@ import 'package:restro/presentation/providers/auth_provider.dart';
 import 'package:restro/presentation/providers/task_provider.dart';
 import 'package:restro/presentation/screens/manager/verification_screen.dart';
 import 'package:restro/presentation/widgets/custom_appbar.dart';
-import 'package:restro/presentation/widgets/health_bar.dart';
 import 'package:restro/presentation/widgets/manager_overview_card.dart';
 import 'package:restro/utils/theme/theme.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
@@ -35,6 +34,7 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthenticationProvider>(context, listen: false);
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    final userName = (auth.currentUser?.name ?? '').trim();
 
     return Scaffold(
       appBar: const CustomAppbar(
@@ -62,7 +62,14 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                 margin: const EdgeInsets.only(bottom: 20),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryColor,
+                      AppTheme.primaryColor.withOpacity(0.85),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -88,14 +95,179 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (userName.isNotEmpty)
+                            Text(
+                              'Hi, $userName',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          if (userName.isNotEmpty) const SizedBox(height: 6),
                           Text(
                             DateFormat('EEEE, MMMM d, yyyy')
                                 .format(DateTime.now()),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.92),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
                             ),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.16),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.18),
+                              ),
+                            ),
+                            child: Text(
+                              "Today's overview & approvals",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.95),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Health section inside the top date card
+                          Consumer<TaskProvider>(
+                            builder: (context, provider, child) {
+                              if (provider.isLoadingDashboard) {
+                                return Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.14),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 20,
+                                        height: 20,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child: const Center(
+                                          child: SizedBox(
+                                            width: 12,
+                                            height: 12,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.white),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Loading health score...',
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.9),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              final data = provider.managerDashboardData;
+                              final healthScore =
+                                  (data['healthScore'] as num?)?.toDouble() ??
+                                      100.0;
+                              final score = healthScore.clamp(0.0, 100.0);
+
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.14),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.white.withOpacity(0.2),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: Icon(
+                                            Icons.grade,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            'Performance',
+                                            style: TextStyle(
+                                              color: Colors.white
+                                                  .withOpacity(0.95),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                        Text(
+                                          '${score.toInt()}%',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: FractionallySizedBox(
+                                        alignment: Alignment.centerLeft,
+                                        widthFactor: score / 100.0,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -104,8 +276,8 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                 ),
               ),
 
-              Text(
-                "Today's Overview",
+              const Text(
+                "Today's Work Status",
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -128,9 +300,6 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
 
                   final data = provider.managerDashboardData;
 
-                  final healthScore =
-                      (data['healthScore'] as num?)?.toDouble() ?? 100.0;
-
                   final verificationPending =
                       (data['verificationPending'] as num?)?.toInt() ?? 0;
                   final attendancePendingApprovals =
@@ -150,8 +319,6 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                         verificationPending: verificationPending,
                         attendancePendingApprovals: attendancePendingApprovals,
                       ),
-                      const SizedBox(height: 14),
-                      HealthBar(healthScore: healthScore),
                       if (approvalNeeded) ...[
                         const SizedBox(height: 14),
                         _ApprovalNeededCard(
@@ -175,11 +342,31 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Quick action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionButton(
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.black.withOpacity(0.06)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 18,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: GridView(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    mainAxisExtent: 86,
+                  ),
+                  children: [
+                    _ActionButton(
                       icon: Icons.assignment,
                       label: 'Assign Task',
                       color: AppTheme.primaryColor,
@@ -187,10 +374,7 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                         Navigator.pushNamed(context, AppRoutes.assignTask);
                       },
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionButton(
+                    _ActionButton(
                       icon: Icons.verified,
                       label: 'Verify Tasks',
                       color: AppTheme.tertiaryColor,
@@ -203,14 +387,7 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                         );
                       },
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionButton(
+                    _ActionButton(
                       icon: Icons.camera_alt,
                       label: 'Attendance',
                       color: AppTheme.primaryLight,
@@ -221,10 +398,7 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                         );
                       },
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionButton(
+                    _ActionButton(
                       icon: Icons.person_add_alt_1,
                       label: 'Register Staff',
                       color: AppTheme.secondaryColor,
@@ -232,8 +406,8 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                         Navigator.pushNamed(context, AppRoutes.registerStaff);
                       },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -254,152 +428,175 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Verification Pending Tasks',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border:
+                              Border.all(color: Colors.black.withOpacity(0.06)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 18,
+                              offset: const Offset(0, 10),
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '${tasks.length}',
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const ManagerVerificationScreen(),
-                                ),
-                              );
-                            },
-                            child: const Text('View all'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (tasks.isEmpty)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border:
-                                Border.all(color: Colors.grey.withOpacity(0.1)),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'No tasks pending verification',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: displayTasks.length,
-                          itemBuilder: (context, index) {
-                            final task = displayTasks[index];
-                            return Card(
-                              color: Colors.white,
-                              margin: const EdgeInsets.only(bottom: 12, top: 4),
-                              elevation: 1.5,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ListTile(
-                                leading: const CircleAvatar(
-                                  backgroundColor: Color(0xFFE3F2FD),
-                                  child: Icon(
-                                    Icons.verified_outlined,
-                                    color: Colors.blue,
-                                  ),
-                                ),
-                                title: Text(
-                                  task.title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      task.description,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: 13,
-                                      ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Verification Pending Tasks',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.textPrimary,
                                     ),
-                                    if (task.completedAt != null) ...[
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'Completed on ${DateFormat('MMM d, y h:mm a').format(task.completedAt!)}',
-                                        style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
+                                  ),
                                 ),
-                                trailing: Container(
+                                Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.blue.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: Colors.blue.withOpacity(0.16),
+                                    ),
                                   ),
-                                  child: const Text(
-                                    'Pending',
-                                    style: TextStyle(
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.w700,
+                                  child: Text(
+                                    '${tasks.length}',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
                                 ),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const ManagerVerificationScreen(),
+                                const SizedBox(width: 6),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const ManagerVerificationScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('View all'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            if (tasks.isEmpty)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 18),
+                                  child: Text(
+                                    'No tasks pending verification',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: displayTasks.length,
+                                itemBuilder: (context, index) {
+                                  final task = displayTasks[index];
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: Colors.black.withOpacity(0.06),
+                                      ),
+                                    ),
+                                    child: ListTile(
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      leading: Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE3F2FD),
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                        ),
+                                        child: const Icon(
+                                          Icons.verified_outlined,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                      title: Text(
+                                        task.title,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      subtitle: Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Text(
+                                          task.description,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: Colors.grey.shade700,
+                                            fontSize: 13,
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                      ),
+                                      trailing: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              Colors.orange.withOpacity(0.12),
+                                          borderRadius:
+                                              BorderRadius.circular(999),
+                                        ),
+                                        child: const Text(
+                                          'Pending',
+                                          style: TextStyle(
+                                            color: Colors.orange,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const ManagerVerificationScreen(),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   );
                                 },
                               ),
-                            );
-                          },
+                          ],
                         ),
+                      ),
                     ],
                   );
                 },
@@ -552,22 +749,26 @@ class _ActionButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
+            Icon(icon, color: color, size: 26),
+            const SizedBox(height: 6),
             Text(
               label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: 13,
               ),
             ),
           ],

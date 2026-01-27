@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
+import 'package:restro/presentation/providers/daily_score_provider.dart';
 import 'package:restro/presentation/screens/staff/staff_home_screen.dart';
 import 'package:restro/presentation/screens/staff/staff_profile_screen.dart';
 import 'package:restro/presentation/screens/staff/staff_task_screen.dart';
@@ -8,6 +9,8 @@ import 'package:restro/presentation/screens/staff/task_completed_screen.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:restro/utils/theme/theme.dart';
 import 'package:restro/data/datasources/remote/firestore_service.dart';
+import 'package:restro/services/navigation_guard.dart';
+import 'package:restro/services/daily_scoring_engine.dart';
 
 class StaffDashboard extends StatefulWidget {
   const StaffDashboard({super.key});
@@ -18,6 +21,10 @@ class StaffDashboard extends StatefulWidget {
 
 class _StaffDashboardState extends State<StaffDashboard> {
   int _currentIndex = 0;
+  final NavigationGuard _navigationGuard = NavigationGuard();
+  bool _isCheckingNavigation = false;
+  bool _skipAttendanceCheck = false;
+  bool _didInitFromRoute = false;
 
   final List<Widget> _screens = [];
   final PageStorageBucket _bucket = PageStorageBucket();
@@ -54,7 +61,26 @@ class _StaffDashboardState extends State<StaffDashboard> {
       const TaskCompletedScreen(),
       const StaffProfileScreen(),
     ]);
-    _checkAttendance();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInitFromRoute) return;
+    _didInitFromRoute = true;
+
+    // Safe place to read ModalRoute arguments (after initState).
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map && args['skipAttendanceCheck'] == true) {
+      _skipAttendanceCheck = true;
+    }
+
+    if (!_skipAttendanceCheck) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _checkAttendance();
+      });
+    }
   }
 
   Future<void> _checkAttendance() async {
@@ -90,10 +116,67 @@ class _StaffDashboardState extends State<StaffDashboard> {
     auth.setAttendanceMarked(true);
   }
 
+  Future<void> _refreshData() async {
+    final auth = Provider.of<AuthenticationProvider>(context, listen: false);
+    if (auth.currentUser != null) {
+      try {
+        // Check for missed tasks and apply deductions
+        final scoringEngine = DailyScoringEngine();
+        await scoringEngine.checkMissedTasksForUser(auth.currentUser!.id);
+
+        // Refresh daily score
+        await Provider.of<DailyScoreProvider>(context, listen: false)
+            .refreshScore(auth.currentUser!.id);
+
+        // Show success feedback
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data refreshed successfully'),
+              duration: Duration(seconds: 2),
+              backgroundColor: AppTheme.primaryColor,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error refreshing data: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backGroundColor,
+      // appBar: AppBar(
+      //   backgroundColor: AppTheme.primaryColor,
+      //   elevation: 0,
+      //   // title: const Text(
+      //   //   'Staff Dashboard',
+      //   //   style: TextStyle(
+      //   //     color: Colors.white,
+      //   //     fontWeight: FontWeight.w700,
+      //   //     fontSize: 20,
+      //   //   ),
+      //   // ),
+      //   actions: [
+      //     IconButton(
+      //       onPressed: _refreshData,
+      //       icon: const Icon(
+      //         Icons.refresh,
+      //         color: Colors.white,
+      //       ),
+      //       tooltip: 'Refresh',
+      //     ),
+      //   ],
+      // ),
       body: SafeArea(
         child: PageStorage(
           bucket: _bucket,
@@ -153,8 +236,44 @@ class _StaffDashboardState extends State<StaffDashboard> {
                 child: NavigationBar(
                   selectedIndex: _currentIndex,
                   height: 70,
-                  onDestinationSelected: (index) {
-                    setState(() => _currentIndex = index);
+                  onDestinationSelected: (index) async {
+                    // Allow navigation to Home / Completed / Profile even when critical tasks are pending.
+                    // Only task-related navigation should be blocked.
+                    if (index == 0 || index == 2 || index == 3) {
+                      setState(() => _currentIndex = index);
+                      return;
+                    }
+
+                    // Block navigation to other tabs if critical tasks are incomplete
+                    if (_isCheckingNavigation) return;
+
+                    setState(() => _isCheckingNavigation = true);
+
+                    try {
+                      final auth = Provider.of<AuthenticationProvider>(context,
+                          listen: false);
+                      if (auth.currentUser?.id != null) {
+                        final canNavigate =
+                            await _navigationGuard.checkNavigation(
+                          context,
+                          auth.currentUser!.id,
+                        );
+
+                        if (canNavigate && mounted) {
+                          setState(() => _currentIndex = index);
+                        }
+                      }
+                    } catch (e) {
+                      print('Error checking navigation: $e');
+                      // Allow navigation on error (fail-safe)
+                      if (mounted) {
+                        setState(() => _currentIndex = index);
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _isCheckingNavigation = false);
+                      }
+                    }
                   },
                   destinations: _navDestinations,
                 ),

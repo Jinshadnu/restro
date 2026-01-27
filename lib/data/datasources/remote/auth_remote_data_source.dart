@@ -9,7 +9,6 @@ import 'package:restro/data/models/user_model.dart';
 /// 🔐 Authentication related remote operations contract
 /// This defines WHAT operations are available (not HOW)
 abstract class AuthRemoteDataSource {
-
   /// Register a new user using email & password
   /// Creates Firebase Auth user + Firestore user document
   Future<AppUserModel> registerUser({
@@ -40,7 +39,6 @@ abstract class AuthRemoteDataSource {
 
 /// 🔥 Firebase implementation of AuthRemoteDataSource
 class AuthRemoteDataSourceImpl extends AuthRemoteDataSource {
-
   final FirebaseAuth auth;
   final FirebaseFirestore firestore;
 
@@ -61,28 +59,24 @@ class AuthRemoteDataSourceImpl extends AuthRemoteDataSource {
       // 1️⃣ Authenticate user with Firebase Auth
       final credential = await auth
           .signInWithEmailAndPassword(
-        email: identifier,
-        password: password,
-      )
+            email: identifier,
+            password: password,
+          )
           .timeout(
-        const Duration(seconds: 15),
-        onTimeout: () =>
-        throw TimeoutException("Connection timed out during sign in"),
-      );
+            const Duration(seconds: 15),
+            onTimeout: () =>
+                throw TimeoutException("Connection timed out during sign in"),
+          );
 
       final uid = credential.user!.uid;
 
       // 2️⃣ Fetch logged-in user's Firestore document
-      final doc = await firestore
-          .collection("users")
-          .doc(uid)
-          .get()
-          .timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException(
-          "Unable to fetch user profile. Check internet connection.",
-        ),
-      );
+      final doc = await firestore.collection("users").doc(uid).get().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException(
+              "Unable to fetch user profile. Check internet connection.",
+            ),
+          );
 
       if (!doc.exists) {
         throw Exception("User profile not found");
@@ -90,7 +84,6 @@ class AuthRemoteDataSourceImpl extends AuthRemoteDataSource {
 
       // 3️⃣ Convert Firestore data to AppUserModel
       return AppUserModel.fromMap(doc.data()!);
-
     } on FirebaseAuthException catch (e) {
       // 🔴 Handle known Firebase auth errors
       if (e.code == 'invalid-email') {
@@ -149,8 +142,7 @@ class AuthRemoteDataSourceImpl extends AuthRemoteDataSource {
       }
 
       // 5️⃣ If not found in users, check staff collection
-      final staffDoc =
-      await firestore.collection('staff').doc(authedUid).get();
+      final staffDoc = await firestore.collection('staff').doc(authedUid).get();
 
       if (!staffDoc.exists) {
         throw Exception('User profile not found');
@@ -168,7 +160,6 @@ class AuthRemoteDataSourceImpl extends AuthRemoteDataSource {
         isSelfieVerified: false,
         selfieVerifiedAt: null,
       );
-
     } on FirebaseFunctionsException {
       // ⛑️ If Cloud Function fails → Firestore fallback
       return _loginWithPinFirestoreFallback(pin);
@@ -181,7 +172,6 @@ class AuthRemoteDataSourceImpl extends AuthRemoteDataSource {
   // ⚠️ PIN LOGIN FALLBACK (Firestore – Dev only)
   // ==========================================
   Future<AppUserModel> _loginWithPinFirestoreFallback(String pin) async {
-
     // Hash the PIN for secure comparison
     final pinHash = sha256.convert(utf8.encode(pin)).toString();
 
@@ -245,7 +235,6 @@ class AuthRemoteDataSourceImpl extends AuthRemoteDataSource {
     required String phone,
     required String role,
   }) async {
-
     // 1️⃣ Create Firebase Auth user
     final credential = await auth.createUserWithEmailAndPassword(
       email: email,

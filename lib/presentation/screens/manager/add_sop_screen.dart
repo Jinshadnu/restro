@@ -55,34 +55,72 @@ class _ManagerAddSopScreenState extends State<ManagerAddSopScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Checklist Details',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
+              // Header card
               Container(
-                padding: const EdgeInsets.all(16),
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.black.withOpacity(0.05)),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryColor,
+                      AppTheme.primaryColor.withOpacity(0.85),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 16,
-                      offset: const Offset(0, 10),
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // SOP TITLE
+                    const Text(
+                      'Create New Checklist',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Define standard operating procedures for staff tasks',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.92),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Basic Information Section
+              _buildSectionHeader('Basic Information', Icons.info_outline),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.black.withOpacity(0.06)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
                     CustomeTextField(
                       label: "Checklist Title",
                       controller: _titleCtrl,
@@ -90,9 +128,7 @@ class _ManagerAddSopScreenState extends State<ManagerAddSopScreen> {
                       validator: (v) =>
                           v!.isEmpty ? "Enter checklist title" : null,
                     ),
-                    const SizedBox(height: 12),
-
-                    // DESCRIPTION
+                    const SizedBox(height: 16),
                     CustomeTextField(
                       label: "Description",
                       controller: _descCtrl,
@@ -100,114 +136,210 @@ class _ManagerAddSopScreenState extends State<ManagerAddSopScreen> {
                       prefixICon: Icons.description_outlined,
                       validator: (v) => v!.isEmpty ? "Enter description" : null,
                     ),
-                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
-                    // STEPS
+              // Checklist Items Section
+              _buildSectionHeader('Checklist Items', Icons.list_alt),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.black.withOpacity(0.06)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     CustomeTextField(
                       label: "Checklist Items (one per line)",
                       controller: _stepsCtrl,
                       maxLine: 6,
                       prefixICon: Icons.list_alt,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.lightbulb_outline,
+                              color: Colors.blue.shade700, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Enter each checklist item on a new line. These will be the steps staff need to complete.',
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
-                    // FREQUENCY DROPDOWN
+              // Settings Section
+              _buildSectionHeader('Settings', Icons.settings),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.black.withOpacity(0.06)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
                     _buildDropdown(
                       label: "Frequency",
                       items: frequencies,
                       value: _frequency,
                       onChange: (v) => setState(() => _frequency = v),
                     ),
+                    const SizedBox(height: 20),
+                    _buildToggleRow(
+                      title: "Photo Evidence Required",
+                      subtitle: "Staff must upload photo to complete task",
+                      icon: Icons.photo_camera_outlined,
+                      value: _requireEvidence,
+                      onChanged: (v) => setState(() => _requireEvidence = v),
+                      activeColor: AppTheme.primaryColor,
+                    ),
                     const SizedBox(height: 16),
-
-                    // PHOTO EVIDENCE SWITCH
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border:
-                            Border.all(color: Colors.black.withOpacity(0.12)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryColor.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          )
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Photo Evidence Required",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          Switch(
-                            value: _requireEvidence,
-                            activeColor: AppTheme.primaryColor,
-                            onChanged: (v) =>
-                                setState(() => _requireEvidence = v),
-                          ),
-                        ],
-                      ),
+                    _buildToggleRow(
+                      title: "Critical Checklist",
+                      subtitle: "Requires immediate attention and completion",
+                      icon: Icons.priority_high,
+                      value: _isCritical,
+                      onChanged: (v) => setState(() => _isCritical = v),
+                      activeColor: AppTheme.error,
                     ),
-                    const SizedBox(height: 12),
-
-                    // CRITICAL SOP SWITCH
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border:
-                            Border.all(color: Colors.black.withOpacity(0.12)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryColor.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          )
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Critical SOP",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          Switch(
-                            value: _isCritical,
-                            activeColor: AppTheme.error,
-                            onChanged: (v) => setState(() => _isCritical = v),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // SUBMIT BUTTON
-                    _isLoading
-                        ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16.0),
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                        : GradientButton(
-                            text: "Save Checklist",
-                            onPressed: _saveSOP,
-                          ),
-                    const SizedBox(height: 10), // Extra bottom padding
                   ],
                 ),
               ),
+              const SizedBox(height: 32),
+
+              // Submit Button
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : GradientButton(
+                      text: "Save Checklist",
+                      onPressed: _saveSOP,
+                    ),
+              const SizedBox(height: 10),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToggleRow({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required Color activeColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: activeColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: activeColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            activeColor: activeColor,
+            onChanged: onChanged,
+          ),
+        ],
       ),
     );
   }
