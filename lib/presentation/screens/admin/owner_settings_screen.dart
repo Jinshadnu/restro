@@ -2,16 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
 import 'package:restro/presentation/widgets/custom_appbar.dart';
+import 'package:restro/utils/services/selfie_verification_settings_service.dart';
 import 'package:restro/utils/theme/theme.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 
-class OwnerSettingsScreen extends StatelessWidget {
+class OwnerSettingsScreen extends StatefulWidget {
   const OwnerSettingsScreen({super.key});
+
+  @override
+  State<OwnerSettingsScreen> createState() => _OwnerSettingsScreenState();
+}
+
+class _OwnerSettingsScreenState extends State<OwnerSettingsScreen> {
+  bool? _selfieEnabledOverride;
+  bool _isSavingSelfieSetting = false;
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthenticationProvider>(context);
     final currentUser = authProvider.currentUser;
+    final settingsService = SelfieVerificationSettingsService();
     return Scaffold(
       backgroundColor: AppTheme.backGroundColor,
       appBar: const CustomAppbar(title: 'Owner Profile'),
@@ -101,6 +111,73 @@ class OwnerSettingsScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
+                  StreamBuilder<bool>(
+                    stream: settingsService.streamEnabled(),
+                    builder: (context, snapshot) {
+                      final enabled =
+                          _selfieEnabledOverride ?? (snapshot.data ?? false);
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border:
+                              Border.all(color: Colors.black.withOpacity(0.05)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: SwitchListTile(
+                          value: enabled,
+                          onChanged: (v) async {
+                            if (_isSavingSelfieSetting) return;
+                            final prev = enabled;
+                            setState(() {
+                              _selfieEnabledOverride = v;
+                              _isSavingSelfieSetting = true;
+                            });
+                            try {
+                              await settingsService.setEnabled(v);
+                              if (!mounted) return;
+                              setState(() {
+                                _isSavingSelfieSetting = false;
+                                _selfieEnabledOverride = null;
+                              });
+                            } catch (e) {
+                              if (!mounted) return;
+                              setState(() {
+                                _isSavingSelfieSetting = false;
+                                _selfieEnabledOverride = prev;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Failed to update setting: ${e.toString()}'),
+                                ),
+                              );
+                            }
+                          },
+                          title: const Text('Selfie Verification'),
+                          subtitle:
+                              const Text('Require selfie after PIN login'),
+                          secondary: CircleAvatar(
+                            radius: 20,
+                            backgroundColor:
+                                AppTheme.primaryColor.withOpacity(0.15),
+                            child: const Icon(
+                              Icons.verified_user_outlined,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                          activeColor: AppTheme.primaryColor,
+                        ),
+                      );
+                    },
+                  ),
                   _tile(
                     icon: Icons.lock_outline,
                     title: 'Change Password',
@@ -111,6 +188,12 @@ class OwnerSettingsScreen extends StatelessWidget {
                     icon: Icons.notifications_none,
                     title: 'Notifications',
                     onTap: () {},
+                  ),
+                  _tile(
+                    icon: Icons.event_available_outlined,
+                    title: 'Attendance Overview',
+                    onTap: () => Navigator.pushNamed(
+                        context, AppRoutes.attendanceOverview),
                   ),
                   _tile(
                     icon: Icons.help_outline,

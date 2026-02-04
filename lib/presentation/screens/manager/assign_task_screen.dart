@@ -36,6 +36,12 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
   TaskFrequency? _selectedFrequency;
   TaskGrade? _selectedGrade;
 
+  bool _autoSchedule = false;
+  String? _selectedTargetStaffRole;
+  List<String> _staffRoles = [];
+  TimeOfDay? _autoStartTime;
+  TimeOfDay? _autoEndTime;
+
   bool _requireEvidence = false;
   bool _isLoading = false;
   bool _isLoadingData = true;
@@ -61,6 +67,22 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
           : await _firestoreService.getUsersByRole('staff');
       if (mounted) {
         setState(() => _staffList = staff);
+      }
+
+      // Load staff roles for auto schedule targeting
+      try {
+        final roles = await _firestoreService.getStaffRoles();
+        if (mounted) {
+          setState(() {
+            _staffRoles = roles;
+            if (_selectedTargetStaffRole != null &&
+                !_staffRoles.contains(_selectedTargetStaffRole)) {
+              _selectedTargetStaffRole = null;
+            }
+          });
+        }
+      } catch (_) {
+        // Optional data; ignore failures.
       }
 
       if (mounted && staff.isEmpty) {
@@ -148,6 +170,164 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: RadioListTile<bool>(
+                                      contentPadding: EdgeInsets.zero,
+                                      value: false,
+                                      groupValue: _autoSchedule,
+                                      onChanged: (v) {
+                                        if (v == null) return;
+                                        setState(() => _autoSchedule = v);
+                                      },
+                                      title: const Text(
+                                        'Manual Assign',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: RadioListTile<bool>(
+                                      contentPadding: EdgeInsets.zero,
+                                      value: true,
+                                      groupValue: _autoSchedule,
+                                      onChanged: (v) {
+                                        if (v == null) return;
+                                        setState(() {
+                                          _autoSchedule = v;
+                                          _selectedStaffId = null;
+                                          _selectedDate = null;
+                                          _plannedStartAt = null;
+                                          _plannedEndAt = null;
+                                          _autoStartTime = null;
+                                          _autoEndTime = null;
+                                        });
+                                      },
+                                      title: const Text(
+                                        'Auto Schedule',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              if (_autoSchedule) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.blue.withOpacity(0.14),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Auto Schedule creates a daily template. The system will assign this task to all staff automatically every day.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.blue,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                DropdownButtonFormField<String>(
+                                  value: (_selectedTargetStaffRole != null &&
+                                          _staffRoles.contains(
+                                              _selectedTargetStaffRole))
+                                      ? _selectedTargetStaffRole
+                                      : null,
+                                  isExpanded: true,
+                                  decoration: InputDecoration(
+                                    labelText: 'Target Staff Role (optional)',
+                                    labelStyle: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.black.withOpacity(0.12),
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.black.withOpacity(0.12),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  hint: Text(
+                                    'All Staff',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                  icon: Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                  items: _staffRoles
+                                      .map(
+                                        (r) => DropdownMenuItem<String>(
+                                          value: r,
+                                          child: Text(
+                                            r,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppTheme.textPrimary,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedTargetStaffRole = value;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                _buildTimePickerTile(
+                                  label: "Start Time *",
+                                  icon: Icons.play_circle_outline,
+                                  value: _autoStartTime,
+                                  onTap: () => _pickAutoTime(isStart: true),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildTimePickerTile(
+                                  label: "End Time *",
+                                  icon: Icons.flag_outlined,
+                                  value: _autoEndTime,
+                                  onTap: () => _pickAutoTime(isStart: false),
+                                ),
+                              ],
+
                               // 🔹 SOP DROPDOWN
                               sopProvider.isLoading
                                   ? const Center(
@@ -217,9 +397,10 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                               const SizedBox(height: 16),
 
                               // 🔹 STAFF DROPDOWN
-                              _buildStaffDropdown(),
-
-                              const SizedBox(height: 24),
+                              if (!_autoSchedule) ...[
+                                _buildStaffDropdown(),
+                                const SizedBox(height: 24),
+                              ],
 
                               // 🔹 FREQUENCY (AUTO FROM SOP)
                               if (_selectedFrequency != null) ...[
@@ -262,43 +443,44 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                         const SizedBox(height: 32),
 
                         // 🔹 SCHEDULE CARD
-                        _buildSectionCard(
-                          title: "Schedule",
-                          icon: Icons.schedule,
-                          child: Column(
-                            children: [
-                              // 🔹 DUE DATE PICKER
-                              _buildDatePickerTile(
-                                label: "Due Date *",
-                                icon: Icons.calendar_month,
-                                value: _selectedDate,
-                                onTap: _pickDate,
-                              ),
+                        if (!_autoSchedule)
+                          _buildSectionCard(
+                            title: "Schedule",
+                            icon: Icons.schedule,
+                            child: Column(
+                              children: [
+                                // 🔹 DUE DATE PICKER
+                                _buildDatePickerTile(
+                                  label: "Due Date *",
+                                  icon: Icons.calendar_month,
+                                  value: _selectedDate,
+                                  onTap: _pickDate,
+                                ),
 
-                              const SizedBox(height: 24),
+                                const SizedBox(height: 24),
 
-                              // 🔹 PLANNED START TIME
-                              _buildDatePickerTile(
-                                label: "Planned Start Time",
-                                icon: Icons.play_circle_outline,
-                                value: _plannedStartAt,
-                                onTap: () =>
-                                    _pickPlannedDateTime(isStart: true),
-                              ),
+                                // 🔹 PLANNED START TIME
+                                _buildDatePickerTile(
+                                  label: "Planned Start Time",
+                                  icon: Icons.play_circle_outline,
+                                  value: _plannedStartAt,
+                                  onTap: () =>
+                                      _pickPlannedDateTime(isStart: true),
+                                ),
 
-                              const SizedBox(height: 24),
+                                const SizedBox(height: 24),
 
-                              // 🔹 PLANNED COMPLETION TIME
-                              _buildDatePickerTile(
-                                label: "Planned Completion Time",
-                                icon: Icons.flag_outlined,
-                                value: _plannedEndAt,
-                                onTap: () =>
-                                    _pickPlannedDateTime(isStart: false),
-                              ),
-                            ],
+                                // 🔹 PLANNED COMPLETION TIME
+                                _buildDatePickerTile(
+                                  label: "Planned Completion Time",
+                                  icon: Icons.flag_outlined,
+                                  value: _plannedEndAt,
+                                  onTap: () =>
+                                      _pickPlannedDateTime(isStart: false),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
 
                         const SizedBox(height: 32),
 
@@ -339,7 +521,9 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                         _isLoading
                             ? const Center(child: CircularProgressIndicator())
                             : GradientButton(
-                                text: "Assign Task",
+                                text: _autoSchedule
+                                    ? "Save Auto Schedule"
+                                    : "Assign Task",
                                 onPressed: _submitTask,
                               ),
                         const SizedBox(height: 10),
@@ -349,6 +533,44 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
                 );
               },
             ),
+    );
+  }
+
+  Widget _buildTimePickerTile({
+    required String label,
+    required IconData icon,
+    required TimeOfDay? value,
+    required VoidCallback onTap,
+  }) {
+    final text = value == null ? label : value.format(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.black.withOpacity(0.12)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppTheme.textSecondary, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -851,30 +1073,31 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
     });
   }
 
+  Future<void> _pickAutoTime({required bool isStart}) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: (isStart ? _autoStartTime : _autoEndTime) ?? TimeOfDay.now(),
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      if (isStart) {
+        _autoStartTime = picked;
+      } else {
+        _autoEndTime = picked;
+      }
+    });
+  }
+
   Future<void> _submitTask() async {
     final formState = _formKey.currentState;
     if (formState == null) return;
     if (!formState.validate()) return;
 
-    if (_selectedDate == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Pick a due date")));
-      return;
-    }
-
     if (_selectedSopId == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Select an SOP")),
-      );
-      return;
-    }
-
-    if (_selectedStaffId == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Select a staff member")),
       );
       return;
     }
@@ -895,28 +1118,82 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
       return;
     }
 
-    if (_plannedStartAt == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Select planned start time")),
-      );
-      return;
-    }
+    if (!_autoSchedule) {
+      if (_selectedDate == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Pick a due date")));
+        return;
+      }
 
-    if (_plannedEndAt == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Select planned completion time")),
-      );
-      return;
-    }
+      if (_selectedStaffId == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Select a staff member")),
+        );
+        return;
+      }
 
-    if (_plannedStartAt != null && _plannedEndAt != null) {
+      if (_plannedStartAt == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Select planned start time")),
+        );
+        return;
+      }
+
+      if (_plannedEndAt == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Select planned completion time")),
+        );
+        return;
+      }
+
       if (_plannedEndAt!.isBefore(_plannedStartAt!)) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text("Planned end time must be after start time")),
+            content: Text("Planned end time must be after start time"),
+          ),
+        );
+        return;
+      }
+    } else {
+      // For now, auto schedule supports daily templates only.
+      if (_selectedFrequency != TaskFrequency.daily) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Auto Schedule currently supports DAILY only"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      if (_autoStartTime == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Select auto schedule start time")),
+        );
+        return;
+      }
+
+      if (_autoEndTime == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Select auto schedule end time")),
+        );
+        return;
+      }
+
+      final startMinutes = _autoStartTime!.hour * 60 + _autoStartTime!.minute;
+      final endMinutes = _autoEndTime!.hour * 60 + _autoEndTime!.minute;
+      if (endMinutes <= startMinutes) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("End time must be after start time")),
         );
         return;
       }
@@ -934,29 +1211,59 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final task = TaskModel(
-        id: _uuid.v4(),
-        title: _titleCtrl.text.trim(),
-        description: _descCtrl.text.trim(),
-        sopid: _selectedSopId!,
-        assignedTo: _selectedStaffId!,
-        assignedBy: auth.currentUser!.id,
-        status: TaskStatus.pending,
-        frequency: _selectedFrequency!,
-        grade: _selectedGrade!, // Added missing grade field
-        plannedStartAt: _plannedStartAt,
-        plannedEndAt: _plannedEndAt,
-        dueDate: _selectedDate,
-        createdAt: DateTime.now(),
-        requiresPhoto: _requireEvidence,
-      );
+      if (_autoSchedule) {
+        final templateId = _uuid.v4();
+        final startMinutes = _autoStartTime!.hour * 60 + _autoStartTime!.minute;
+        final endMinutes = _autoEndTime!.hour * 60 + _autoEndTime!.minute;
+        final payload = <String, dynamic>{
+          'id': templateId,
+          'title': _titleCtrl.text.trim(),
+          'description': _descCtrl.text.trim(),
+          'sopid': _selectedSopId!,
+          'frequency': 'daily',
+          'assignmentMode': 'round_robin',
+          'windowStartMinutes': startMinutes,
+          'windowEndMinutes': endMinutes,
+          'grade': _selectedGrade!.toString().split('.').last,
+          'requiresPhoto': _requireEvidence,
+          'active': true,
+          'assignedBy': auth.currentUser!.id,
+          'createdAt': DateTime.now().toIso8601String(),
+        };
+        if (_selectedTargetStaffRole != null &&
+            _selectedTargetStaffRole!.trim().isNotEmpty) {
+          payload['targetStaffRole'] = _selectedTargetStaffRole!.trim();
+        }
+        await _firestoreService.createTaskTemplateFromData(payload);
+      } else {
+        final task = TaskModel(
+          id: _uuid.v4(),
+          title: _titleCtrl.text.trim(),
+          description: _descCtrl.text.trim(),
+          sopid: _selectedSopId!,
+          assignedTo: _selectedStaffId!,
+          assignedBy: auth.currentUser!.id,
+          status: TaskStatus.pending,
+          frequency: _selectedFrequency!,
+          grade: _selectedGrade!,
+          plannedStartAt: _plannedStartAt,
+          plannedEndAt: _plannedEndAt,
+          dueDate: _selectedDate,
+          createdAt: DateTime.now(),
+          requiresPhoto: _requireEvidence,
+        );
 
-      await _firestoreService.createTask(task);
+        await _firestoreService.createTask(task);
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Task assigned successfully"),
+        SnackBar(
+          content: Text(
+            _autoSchedule
+                ? "Auto schedule saved successfully"
+                : "Task assigned successfully",
+          ),
           backgroundColor: Colors.green,
         ),
       );

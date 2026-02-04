@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
 import 'package:restro/data/datasources/remote/firestore_service.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
+import 'package:restro/utils/services/selfie_verification_settings_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -65,6 +66,19 @@ class _SplashScreenState extends State<SplashScreen>
           break;
 
         case "staff":
+          bool selfieRequired = true;
+          try {
+            selfieRequired = await SelfieVerificationSettingsService()
+                .getEnabled(forceRefresh: true);
+          } catch (_) {
+            selfieRequired = true;
+          }
+
+          if (!selfieRequired) {
+            Navigator.pushReplacementNamed(context, AppRoutes.staffDashboard);
+            break;
+          }
+
           // Check if attendance is already marked today
           final now = DateTime.now();
           if (now.hour < 14) {

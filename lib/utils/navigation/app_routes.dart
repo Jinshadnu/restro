@@ -20,6 +20,7 @@ import 'package:restro/presentation/screens/staff/start_task_screen.dart';
 import 'package:restro/presentation/screens/staff/task_details_screen.dart';
 import 'package:restro/presentation/screens/staff/attendance_selfie_screen.dart';
 import 'package:restro/presentation/screens/manager/attendance_verification_screen.dart';
+import 'package:restro/presentation/screens/manager/attendance_overview_screen.dart';
 import 'package:restro/presentation/screens/manager/register_staff_screen.dart';
 
 class AppRoutes {
@@ -46,6 +47,7 @@ class AppRoutes {
   static const String assignTask = '/assign_task';
   static const String attendanceSelfie = '/attendance_selfie';
   static const String attendanceVerification = '/attendance_verification';
+  static const String attendanceOverview = '/attendance_overview';
   static const String registerStaff = '/register_staff';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -168,6 +170,11 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) =>
               AttendanceVerificationScreen(attendanceId: attendanceId),
+        );
+
+      case attendanceOverview:
+        return MaterialPageRoute(
+          builder: (_) => const AttendanceOverviewScreen(),
         );
 
       case registerStaff:

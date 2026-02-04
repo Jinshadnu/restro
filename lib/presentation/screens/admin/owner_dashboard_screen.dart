@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/admin_dashboard_provider.dart';
 import 'package:restro/presentation/widgets/custom_appbar.dart';
+import 'package:restro/presentation/widgets/attendance_statistics_card.dart';
+import 'package:restro/presentation/widgets/dashboard_section_header.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:restro/utils/theme/theme.dart';
 import 'package:intl/intl.dart';
@@ -21,6 +24,13 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: AppTheme.primaryColor,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider =
           Provider.of<AdminDashboardProvider>(context, listen: false);
@@ -167,6 +177,167 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
               ),
 
               const SizedBox(height: 24),
+
+              Consumer<AdminDashboardProvider>(
+                builder: (context, provider, child) {
+                  final data = provider.ownerDashboard;
+
+                  final totalStaff = (data['totalStaff'] as num?)?.toInt() ?? 0;
+                  final presentStaff =
+                      (data['presentStaff'] as num?)?.toInt() ?? 0;
+                  final lateStaff = (data['lateStaff'] as num?)?.toInt() ?? 0;
+                  final absentStaff =
+                      (data['absentStaff'] as num?)?.toInt() ?? 0;
+
+                  final pendingTasks =
+                      (data['pendingTasks'] as num?)?.toInt() ?? 0;
+                  final verificationPending =
+                      (data['verificationPending'] as num?)?.toInt() ?? 0;
+                  final completedToday =
+                      (data['completedToday'] as num?)?.toInt() ?? 0;
+
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.black.withOpacity(0.04)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withOpacity(0.10),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.dashboard_customize,
+                                color: AppTheme.primaryColor,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Overall Status',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                    color: Colors.blue.withOpacity(0.16)),
+                              ),
+                              child: Text(
+                                DateFormat('MMM d').format(DateTime.now()),
+                                style: const TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTodayTile(
+                                icon: Icons.people,
+                                title: 'Total Staff',
+                                count: totalStaff,
+                                color: Colors.teal,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildTodayTile(
+                                icon: Icons.check_circle,
+                                title: 'Present',
+                                count: presentStaff,
+                                color: AppTheme.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTodayTile(
+                                icon: Icons.access_time,
+                                title: 'Late',
+                                count: lateStaff,
+                                color: AppTheme.warning,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildTodayTile(
+                                icon: Icons.cancel,
+                                title: 'Absent',
+                                count: absentStaff,
+                                color: AppTheme.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTodayTile(
+                                icon: Icons.checklist,
+                                title: 'Completed Today',
+                                count: completedToday,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildTodayTile(
+                                icon: Icons.pending,
+                                title: 'Pending Tasks',
+                                count: pendingTasks,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildTodayTile(
+                          icon: Icons.verified_user,
+                          title: 'To Verify',
+                          count: verificationPending,
+                          color: AppTheme.tertiaryColor,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
 
               Consumer<AdminDashboardProvider>(
                 builder: (context, provider, child) {
@@ -431,6 +602,8 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                         ),
                       ),
 
+                      AttendanceStatisticsCard(isOwner: true),
+
                       // Enhanced metric cards
                       _EnhancedMetricCard(
                         title: 'Task Compliance',
@@ -584,27 +757,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
 
   // Enhanced section header widget
   Widget _buildSectionHeader(String title, IconData icon) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppTheme.primaryColor, size: 22),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-      ],
-    );
+    return DashboardSectionHeader(title: title, icon: icon);
   }
 
   Widget _buildTodayTile({
@@ -1253,14 +1406,16 @@ class _StaffRolePerformanceGraph extends StatelessWidget {
 
         final tasks = snapshot.data ?? [];
         final Map<String, Map<String, int>> roleData = {};
+        final Map<String, int> staffApproved = {};
 
-        // Get staff roles from user data
         for (var task in tasks) {
           // This would need to be enhanced to get actual staff roles
           // For now, we'll categorize by performance
           String role = 'Staff';
           if (task.status == TaskStatus.approved) {
             role = 'High Performer';
+            staffApproved[task.assignedTo] =
+                (staffApproved[task.assignedTo] ?? 0) + 1;
           } else if (task.status == TaskStatus.rejected) {
             role = 'Needs Attention';
           }
@@ -1287,7 +1442,82 @@ class _StaffRolePerformanceGraph extends StatelessWidget {
           );
         }).toList();
 
-        return _barCard(items, showLabel: true);
+        if (staffApproved.isEmpty) {
+          return _barCard(items, showLabel: true);
+        }
+
+        final topEntry =
+            staffApproved.entries.reduce((a, b) => a.value >= b.value ? a : b);
+
+        return FutureBuilder<Map<String, String>>(
+          future: firestoreService.getUserIdNameMap(),
+          builder: (context, userSnap) {
+            final userMap = userSnap.data ?? const <String, String>{};
+            final topName = userMap[topEntry.key] ?? topEntry.key;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.green.withOpacity(0.18)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.14),
+                          borderRadius: BorderRadius.circular(999),
+                          border:
+                              Border.all(color: Colors.green.withOpacity(0.25)),
+                        ),
+                        child: const Text(
+                          'High Performer',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          topName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${topEntry.value}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _barCard(items, showLabel: true),
+              ],
+            );
+          },
+        );
       },
     );
   }

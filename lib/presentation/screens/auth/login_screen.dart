@@ -7,6 +7,7 @@ import 'package:restro/presentation/widgets/custome_text_field.dart';
 import 'package:restro/presentation/widgets/gradient_button.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:restro/utils/theme/theme.dart';
+import 'package:restro/utils/services/selfie_verification_settings_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -216,6 +217,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Navigator.pushReplacementNamed(
                                         context, AppRoutes.managerDashboard);
                                   } else if (role == "staff") {
+                                    bool selfieRequired = true;
+                                    try {
+                                      selfieRequired =
+                                          await SelfieVerificationSettingsService()
+                                              .getEnabled(forceRefresh: true);
+                                    } catch (_) {
+                                      selfieRequired = true;
+                                    }
+
+                                    if (!selfieRequired) {
+                                      Navigator.pushReplacementNamed(
+                                          context, AppRoutes.staffDashboard);
+                                      return;
+                                    }
+
                                     final now = DateTime.now();
                                     if (now.hour < 14) {
                                       Navigator.pushReplacementNamed(

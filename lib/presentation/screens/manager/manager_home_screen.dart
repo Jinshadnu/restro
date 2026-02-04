@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/domain/entities/task_entity.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
@@ -6,6 +7,9 @@ import 'package:restro/presentation/providers/task_provider.dart';
 import 'package:restro/presentation/screens/manager/verification_screen.dart';
 import 'package:restro/presentation/widgets/custom_appbar.dart';
 import 'package:restro/presentation/widgets/manager_overview_card.dart';
+import 'package:restro/presentation/widgets/attendance_statistics_card.dart';
+import 'package:restro/presentation/widgets/dashboard_section_header.dart';
+import 'package:restro/presentation/widgets/dashboard_surface_card.dart';
 import 'package:restro/utils/theme/theme.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:intl/intl.dart';
@@ -21,6 +25,13 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: AppTheme.primaryColor,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthenticationProvider>(context, listen: false);
       final taskProvider = Provider.of<TaskProvider>(context, listen: false);
@@ -276,13 +287,9 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                 ),
               ),
 
-              const Text(
-                "Today's Work Status",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary,
-                ),
+              const DashboardSectionHeader(
+                title: "Today's Work Status",
+                icon: Icons.analytics_outlined,
               ),
               const SizedBox(height: 16),
 
@@ -332,30 +339,18 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                 },
               ),
 
+              const SizedBox(height: 16),
+              AttendanceStatisticsCard(isOwner: false),
+
               const SizedBox(height: 24),
-              const Text(
-                "Quick Actions",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+              const DashboardSectionHeader(
+                title: "Quick Actions",
+                icon: Icons.flash_on,
               ),
               const SizedBox(height: 16),
 
-              Container(
+              DashboardSurfaceCard(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.black.withOpacity(0.06)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 18,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
                 child: GridView(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -390,7 +385,7 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                     _ActionButton(
                       icon: Icons.camera_alt,
                       label: 'Attendance',
-                      color: AppTheme.primaryLight,
+                      color: AppTheme.primaryColor,
                       onTap: () {
                         Navigator.pushNamed(
                           context,
@@ -399,9 +394,9 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                       },
                     ),
                     _ActionButton(
-                      icon: Icons.person_add_alt_1,
+                      icon: Icons.person_add,
                       label: 'Register Staff',
-                      color: AppTheme.secondaryColor,
+                      color: Colors.teal,
                       onTap: () {
                         Navigator.pushNamed(context, AppRoutes.registerStaff);
                       },

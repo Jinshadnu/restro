@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:restro/domain/entities/task_entity.dart';
 import '../../models/task_model.dart';
 import '../../models/sop_model.dart';
@@ -24,6 +25,17 @@ class FirestoreService {
       throw ArgumentError('Task id is required');
     }
     await _firestore.collection('tasks').doc(id).set({...data, 'id': id});
+  }
+
+  Future<void> createTaskTemplateFromData(Map<String, dynamic> data) async {
+    final id = (data['id'] ?? '').toString();
+    if (id.isEmpty) {
+      throw ArgumentError('Template id is required');
+    }
+    await _firestore
+        .collection('task_templates')
+        .doc(id)
+        .set({...data, 'id': id}, SetOptions(merge: true));
   }
 
   Stream<List<TaskModel>> getTasksStream(String userId, {String? status}) {
@@ -346,6 +358,47 @@ class FirestoreService {
 
     final attendancePendingApprovals = attendanceSnapshot.docs.length;
 
+    final roleVariants = <String>['staff', 'STAFF', 'Staff'];
+    final staffSnapshot = await _firestore
+        .collection('users')
+        .where('role', whereIn: roleVariants)
+        .get();
+
+    final totalStaff = staffSnapshot.docs.length;
+    final todayDateStr = DateFormat('yyyy-MM-dd').format(todayStart);
+    final todayAttendanceSnapshot = await _firestore
+        .collection('attendance')
+        .where('dateStr', isEqualTo: todayDateStr)
+        .get();
+
+    final attendanceByUser = <String, Map<String, dynamic>>{};
+    for (final doc in todayAttendanceSnapshot.docs) {
+      final data = doc.data();
+      final uid = (data['userId'] ?? data['staff_id'] ?? '').toString();
+      if (uid.isEmpty) continue;
+      attendanceByUser[uid] = data;
+    }
+
+    int presentStaff = 0;
+    int lateStaff = 0;
+    for (final doc in staffSnapshot.docs) {
+      final uid = doc.id;
+      final att = attendanceByUser[uid];
+      if (att == null) continue;
+      presentStaff += 1;
+
+      final ts = _parseDateTime(att['timestamp'] ?? att['capturedAt']);
+      if (ts != null) {
+        final threshold = DateTime(ts.year, ts.month, ts.day, 14)
+            .add(const Duration(minutes: 15));
+        if (ts.isAfter(threshold)) {
+          lateStaff += 1;
+        }
+      }
+    }
+
+    final absentStaff = (totalStaff - presentStaff).clamp(0, totalStaff);
+
     double healthScore = 100.0;
     healthScore -= pendingTasks * 2;
     healthScore -= verificationPending * 3;
@@ -487,6 +540,47 @@ class FirestoreService {
 
     final attendancePendingApprovals = attendanceSnapshot.docs.length;
 
+    final roleVariants = <String>['staff', 'STAFF', 'Staff'];
+    final staffSnapshot = await _firestore
+        .collection('users')
+        .where('role', whereIn: roleVariants)
+        .get();
+
+    final totalStaff = staffSnapshot.docs.length;
+    final todayDateStr = DateFormat('yyyy-MM-dd').format(todayStart);
+    final todayAttendanceSnapshot = await _firestore
+        .collection('attendance')
+        .where('dateStr', isEqualTo: todayDateStr)
+        .get();
+
+    final attendanceByUser = <String, Map<String, dynamic>>{};
+    for (final doc in todayAttendanceSnapshot.docs) {
+      final data = doc.data();
+      final uid = (data['userId'] ?? data['staff_id'] ?? '').toString();
+      if (uid.isEmpty) continue;
+      attendanceByUser[uid] = data;
+    }
+
+    int presentStaff = 0;
+    int lateStaff = 0;
+    for (final doc in staffSnapshot.docs) {
+      final uid = doc.id;
+      final att = attendanceByUser[uid];
+      if (att == null) continue;
+      presentStaff += 1;
+
+      final ts = _parseDateTime(att['timestamp'] ?? att['capturedAt']);
+      if (ts != null) {
+        final threshold = DateTime(ts.year, ts.month, ts.day, 14)
+            .add(const Duration(minutes: 15));
+        if (ts.isAfter(threshold)) {
+          lateStaff += 1;
+        }
+      }
+    }
+
+    final absentStaff = (totalStaff - presentStaff).clamp(0, totalStaff);
+
     DateTime? _parseScoreDate(dynamic value) {
       if (value == null) return null;
       if (value is DateTime) return value;
@@ -544,6 +638,10 @@ class FirestoreService {
       'pendingTasks': pendingTasks,
       'verificationPending': verificationPending,
       'attendancePendingApprovals': attendancePendingApprovals,
+      'totalStaff': totalStaff,
+      'presentStaff': presentStaff,
+      'lateStaff': lateStaff,
+      'absentStaff': absentStaff,
       'shopDailyScore': shopDailyScore,
       'shopDailyScoreCount': scoreCount,
     };
@@ -773,6 +871,92 @@ class FirestoreService {
         if (aTs == null) return 1;
         if (bTs == null) return -1;
         return bTs.compareTo(aTs);
+      });
+
+      return items;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> streamAttendanceForDate(String dateStr) {
+    final d = dateStr.trim();
+    if (d.isEmpty) return Stream.value([]);
+
+    return _firestore
+        .collection('attendance')
+        .where('dateStr', isEqualTo: d)
+        .snapshots()
+        .map((snapshot) {
+      final items = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+
+      items.sort((a, b) {
+        final aTs = _parseDateTime(a['timestamp'] ?? a['capturedAt']);
+        final bTs = _parseDateTime(b['timestamp'] ?? b['capturedAt']);
+        if (aTs == null && bTs == null) return 0;
+        if (aTs == null) return 1;
+        if (bTs == null) return -1;
+        return bTs.compareTo(aTs);
+      });
+
+      return items;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> streamStaffForManager(String managerId) {
+    final id = managerId.trim();
+    if (id.isEmpty) return Stream.value([]);
+
+    // Query by created_by only to avoid composite indexes; filter role client-side.
+    return _firestore
+        .collection('users')
+        .where('created_by', isEqualTo: id)
+        .snapshots()
+        .map((snapshot) {
+      final items = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).where((u) {
+        final role = (u['role'] ?? '').toString().toLowerCase();
+        return role == 'staff';
+      }).toList();
+
+      items.sort((a, b) {
+        final an = (a['name'] ?? '').toString().toLowerCase();
+        final bn = (b['name'] ?? '').toString().toLowerCase();
+        return an.compareTo(bn);
+      });
+
+      return items;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> streamAllStaffUsers() {
+    // Single-field whereIn does not require composite indexes.
+    final roleVariants = <String>[
+      'staff',
+      'STAFF',
+      'Staff',
+    ];
+
+    return _firestore
+        .collection('users')
+        .where('role', whereIn: roleVariants)
+        .snapshots()
+        .map((snapshot) {
+      final items = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+
+      items.sort((a, b) {
+        final an = (a['name'] ?? '').toString().toLowerCase();
+        final bn = (b['name'] ?? '').toString().toLowerCase();
+        return an.compareTo(bn);
       });
 
       return items;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
 import 'package:restro/presentation/providers/daily_score_provider.dart';
@@ -11,6 +12,7 @@ import 'package:restro/utils/theme/theme.dart';
 import 'package:restro/data/datasources/remote/firestore_service.dart';
 import 'package:restro/services/navigation_guard.dart';
 import 'package:restro/services/daily_scoring_engine.dart';
+import 'package:restro/utils/services/selfie_verification_settings_service.dart';
 
 class StaffDashboard extends StatefulWidget {
   const StaffDashboard({super.key});
@@ -22,6 +24,8 @@ class StaffDashboard extends StatefulWidget {
 class _StaffDashboardState extends State<StaffDashboard> {
   int _currentIndex = 0;
   final NavigationGuard _navigationGuard = NavigationGuard();
+  final SelfieVerificationSettingsService _selfieSettingsService =
+      SelfieVerificationSettingsService();
   bool _isCheckingNavigation = false;
   bool _skipAttendanceCheck = false;
   bool _didInitFromRoute = false;
@@ -55,6 +59,13 @@ class _StaffDashboardState extends State<StaffDashboard> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: AppTheme.primaryColor,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+    );
     _screens.addAll([
       const StaffHomeScreen(),
       const StaffTaskScreen(),
@@ -84,6 +95,14 @@ class _StaffDashboardState extends State<StaffDashboard> {
   }
 
   Future<void> _checkAttendance() async {
+    bool selfieRequired = true;
+    try {
+      selfieRequired = await _selfieSettingsService.getEnabled();
+    } catch (_) {
+      selfieRequired = true;
+    }
+    if (!selfieRequired) return;
+
     final now = DateTime.now();
     // Daily attendance check starts at 2 PM (14:00)
     if (now.hour < 14) return;

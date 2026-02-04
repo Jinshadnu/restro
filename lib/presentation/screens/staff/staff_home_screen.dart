@@ -11,6 +11,7 @@ import 'package:restro/presentation/providers/daily_score_provider.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:restro/utils/theme/theme.dart';
 import 'package:restro/services/critical_compliance_service.dart';
+import 'package:restro/presentation/widgets/dashboard_section_header.dart';
 import 'package:intl/intl.dart';
 
 class StaffHomeScreen extends StatefulWidget {
@@ -940,27 +941,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: AppTheme.primaryColor, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-      ],
-    );
+    return DashboardSectionHeader(title: title, icon: icon);
   }
 
   Widget _buildFilterChip(TaskFrequency? value, String label) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
+import 'package:restro/utils/services/selfie_verification_settings_service.dart';
 import 'package:restro/utils/theme/theme.dart';
 import 'package:intl/intl.dart';
 
@@ -12,6 +13,7 @@ class ManagerProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthenticationProvider>(context);
     final currentUser = authProvider.currentUser;
+    final settingsService = SelfieVerificationSettingsService();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -171,6 +173,10 @@ class ManagerProfileScreen extends StatelessWidget {
                   icon: Icons.settings_outlined,
                   child: Column(
                     children: [
+                      _SelfieVerificationToggle(
+                        settingsService: settingsService,
+                      ),
+                      const SizedBox(height: 12),
                       _buildSettingsTile(
                         icon: Icons.edit_outlined,
                         title: 'Edit Profile',
@@ -210,6 +216,16 @@ class ManagerProfileScreen extends StatelessWidget {
                   icon: Icons.help_outline,
                   child: Column(
                     children: [
+                      _buildSettingsTile(
+                        icon: Icons.event_available_outlined,
+                        title: 'Attendance Overview',
+                        subtitle: 'View staff attendance submissions',
+                        onTap: () {
+                          Navigator.pushNamed(
+                              context, AppRoutes.attendanceOverview);
+                        },
+                      ),
+                      const SizedBox(height: 12),
                       _buildSettingsTile(
                         icon: Icons.help_center_outlined,
                         title: 'Help & Support',
@@ -917,6 +933,88 @@ class ManagerProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SelfieVerificationToggle extends StatefulWidget {
+  final SelfieVerificationSettingsService settingsService;
+
+  const _SelfieVerificationToggle({required this.settingsService});
+
+  @override
+  State<_SelfieVerificationToggle> createState() =>
+      _SelfieVerificationToggleState();
+}
+
+class _SelfieVerificationToggleState extends State<_SelfieVerificationToggle> {
+  bool? _enabledOverride;
+  bool _isSaving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<bool>(
+      stream: widget.settingsService.streamEnabled(),
+      builder: (context, snapshot) {
+        final enabled = _enabledOverride ?? (snapshot.data ?? false);
+
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FA),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.black.withOpacity(0.04)),
+          ),
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              'Selfie Verification',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            subtitle: const Text(
+              'Require selfie after PIN login',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            value: enabled,
+            onChanged: (v) async {
+              if (_isSaving) return;
+              final prev = enabled;
+              setState(() {
+                _enabledOverride = v;
+                _isSaving = true;
+              });
+
+              try {
+                await widget.settingsService.setEnabled(v);
+                if (!mounted) return;
+                setState(() {
+                  _isSaving = false;
+                  _enabledOverride = null;
+                });
+              } catch (e) {
+                if (!mounted) return;
+                setState(() {
+                  _isSaving = false;
+                  _enabledOverride = prev;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to update setting: ${e.toString()}'),
+                  ),
+                );
+              }
+            },
+            activeColor: AppTheme.primaryColor,
+          ),
+        );
+      },
     );
   }
 }

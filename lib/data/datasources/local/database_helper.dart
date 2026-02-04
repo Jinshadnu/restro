@@ -22,7 +22,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4, // Increment version for task fields migration
+      version: 5,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -43,7 +43,8 @@ class DatabaseHelper {
               verifiedAt TEXT,
               rejectionReason TEXT,
               sync_status TEXT,
-              synced INTEGER NOT NULL DEFAULT 0
+              synced INTEGER NOT NULL DEFAULT 0,
+              location TEXT
             )
           ''');
 
@@ -64,6 +65,14 @@ class DatabaseHelper {
           try {
             await db.execute(
               'ALTER TABLE tasks ADD COLUMN rejectedAt TEXT',
+            );
+          } catch (_) {}
+        }
+
+        if (oldVersion < 5) {
+          try {
+            await db.execute(
+              'ALTER TABLE attendance ADD COLUMN location TEXT',
             );
           } catch (_) {}
         }
@@ -154,7 +163,8 @@ class DatabaseHelper {
         verifiedAt TEXT,
         rejectionReason TEXT,
         sync_status TEXT,
-        synced INTEGER NOT NULL DEFAULT 0
+        synced INTEGER NOT NULL DEFAULT 0,
+        location TEXT
       )
     ''');
 

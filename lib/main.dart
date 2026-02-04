@@ -54,6 +54,7 @@ Future<void> main() async {
   await DatabaseHelper.instance.database;
 
   if (kDebugMode) {
+    await LocationService.enableTestingGeofenceBypass(true);
     await LocationService.setShopLocationToCurrentLocation();
   }
 

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:restro/domain/entities/user_entity.dart';
 
 class AppUserModel extends UserEntity {
@@ -26,6 +27,16 @@ class AppUserModel extends UserEntity {
   }
 
   factory AppUserModel.fromMap(Map<String, dynamic> map) {
+    final dynamic selfieVerifiedAtRaw = map['selfie_verified_at'];
+    int? selfieVerifiedAt;
+    if (selfieVerifiedAtRaw is int) {
+      selfieVerifiedAt = selfieVerifiedAtRaw;
+    } else if (selfieVerifiedAtRaw is Timestamp) {
+      selfieVerifiedAt = selfieVerifiedAtRaw.toDate().millisecondsSinceEpoch;
+    } else if (selfieVerifiedAtRaw is DateTime) {
+      selfieVerifiedAt = selfieVerifiedAtRaw.millisecondsSinceEpoch;
+    }
+
     return AppUserModel(
       id: map['id'],
       email: map['email'],
@@ -34,7 +45,7 @@ class AppUserModel extends UserEntity {
       phone: map['phone'],
       lastSynced: map['last_synced'],
       isSelfieVerified: map['is_selfie_verified'] ?? false,
-      selfieVerifiedAt: map['selfie_verified_at'],
+      selfieVerifiedAt: selfieVerifiedAt,
     );
   }
 
