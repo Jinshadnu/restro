@@ -85,219 +85,424 @@ class _MonthlyAttendanceSummaryScreenState
         : _firestoreService.streamStaffForManager(auth.currentUser?.id ?? '');
 
     return Scaffold(
-      backgroundColor: AppTheme.backGroundColor,
-      appBar: AppBar(
-        title: const Text('Monthly Attendance Summary'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        actions: [
-          TextButton.icon(
-            onPressed: _pickMonth,
-            icon: const Icon(
-              Icons.calendar_month_outlined,
-              color: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          // Custom Gradient Header
+          Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 20,
+              bottom: 30,
+              left: 24,
+              right: 24,
             ),
-            label: Text(
-              _monthLabel(_selectedMonth),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryColor,
+                  AppTheme.primaryColor.withOpacity(0.85),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(30),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(),
+                      borderRadius: BorderRadius.circular(50),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.arrow_back,
+                            color: Colors.white, size: 24),
+                      ),
+                    ),
+                    const Text(
+                      'Monthly Attendance',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 40), // Balance back button
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Month Selector
+                InkWell(
+                  onTap: _pickMonth,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_month_rounded,
+                            color: Colors.white, size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          _monthLabel(_selectedMonth),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.keyboard_arrow_down_rounded,
+                            color: Colors.white70, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: StreamBuilder<List<Map<String, dynamic>>>(
-          stream: staffStream,
-          builder: (context, staffSnap) {
-            if (staffSnap.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (staffSnap.hasError) {
-              return Center(child: Text('Error: ${staffSnap.error}'));
-            }
-
-            final staff = staffSnap.data ?? [];
-
-            return StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _firestoreService.streamAttendanceForDateRange(
-                startStr,
-                endStr,
-              ),
-              builder: (context, attendanceSnap) {
-                if (attendanceSnap.connectionState == ConnectionState.waiting) {
+          
+          Expanded(
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: staffStream,
+              builder: (context, staffSnap) {
+                if (staffSnap.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (attendanceSnap.hasError) {
-                  return Center(child: Text('Error: ${attendanceSnap.error}'));
+                if (staffSnap.hasError) {
+                  return Center(
+                      child: Text('Error: ${staffSnap.error}',
+                          style: const TextStyle(color: Colors.red)));
                 }
 
-                final attendances = attendanceSnap.data ?? [];
+                final staff = staffSnap.data ?? [];
 
-                final attendanceByUser = <String, List<Map<String, dynamic>>>{};
-                for (final a in attendances) {
-                  final uid = (a['userId'] ?? a['staff_id'] ?? '').toString();
-                  if (uid.isEmpty) continue;
-                  (attendanceByUser[uid] ??= []).add(a);
-                }
-
-                staff.sort((a, b) {
-                  final an = (a['name'] ?? '').toString().toLowerCase();
-                  final bn = (b['name'] ?? '').toString().toLowerCase();
-                  return an.compareTo(bn);
-                });
-
-                if (staff.isEmpty) {
-                  return const Center(child: Text('No staff found'));
-                }
-
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: staff.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final s = staff[index];
-                    final uid = (s['id'] ?? '').toString();
-                    final name = (s['name'] ?? 'Unknown').toString();
-                    final roleDisplay =
-                        (s['staff_role'] ?? s['staffRole'] ?? '')
-                            .toString()
-                            .trim();
-
-                    final userAttendance = attendanceByUser[uid] ?? const [];
-
-                    final uniqueDays = <String>{};
-                    int present = 0;
-                    int pending = 0;
-                    int rejected = 0;
-                    int late = 0;
-
-                    for (final a in userAttendance) {
-                      final dateStr = (a['dateStr'] ?? '').toString();
-                      if (dateStr.isEmpty) continue;
-                      uniqueDays.add(dateStr);
-
-                      final status = (a['verification_status'] ?? a['status'] ??
-                              '')
-                          .toString()
-                          .toLowerCase();
-
-                      if (status == 'approved' || status == 'verified') {
-                        present += 1;
-                      } else if (status == 'rejected') {
-                        rejected += 1;
-                      } else {
-                        pending += 1;
-                      }
-
-                      final ts = a['timestamp'] ?? a['capturedAt'];
-                      final dt = _firestoreService.parseDateTimePublic(ts);
-                      if (dt != null && _isLate(dt)) {
-                        late += 1;
-                      }
+                return StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _firestoreService.streamAttendanceForDateRange(
+                    startStr,
+                    endStr,
+                  ),
+                  builder: (context, attendanceSnap) {
+                    if (attendanceSnap.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (attendanceSnap.hasError) {
+                      return Center(
+                          child: Text('Error: ${attendanceSnap.error}',
+                              style: const TextStyle(color: Colors.red)));
                     }
 
-                    final absent = daysInMonth - uniqueDays.length;
+                    final attendances = attendanceSnap.data ?? [];
 
-                    return Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.black.withOpacity(0.06)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          )
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
+                    final attendanceByUser =
+                        <String, List<Map<String, dynamic>>>{};
+                    for (final a in attendances) {
+                      final uid =
+                          (a['userId'] ?? a['staff_id'] ?? '').toString();
+                      if (uid.isEmpty) continue;
+                      (attendanceByUser[uid] ??= []).add(a);
+                    }
+
+                    staff.sort((a, b) {
+                      final an = (a['name'] ?? '').toString().toLowerCase();
+                      final bn = (b['name'] ?? '').toString().toLowerCase();
+                      return an.compareTo(bn);
+                    });
+
+                    if (staff.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.people_outline,
+                                size: 60, color: Colors.grey[300]),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No staff found',
+                              style: TextStyle(
+                                  color: Colors.grey[500],
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 24),
+                      itemCount: staff.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final s = staff[index];
+                        final uid = (s['id'] ?? '').toString();
+                        final name = (s['name'] ?? 'Unknown').toString();
+                        final roleDisplay =
+                            (s['staff_role'] ?? s['staffRole'] ?? '')
+                                .toString()
+                                .trim();
+
+                        final userAttendance =
+                            attendanceByUser[uid] ?? const [];
+
+                        final uniqueDays = <String>{};
+                        int present = 0;
+                        int pending = 0;
+                        int rejected = 0;
+                        int late = 0;
+
+                        for (final a in userAttendance) {
+                          final dateStr = (a['dateStr'] ?? '').toString();
+                          if (dateStr.isEmpty) continue;
+                          uniqueDays.add(dateStr);
+
+                          final status =
+                              (a['verification_status'] ?? a['status'] ?? '')
+                                  .toString()
+                                  .toLowerCase();
+
+                          if (status == 'approved' || status == 'verified') {
+                            present += 1;
+                          } else if (status == 'rejected') {
+                            rejected += 1;
+                          } else {
+                            pending += 1;
+                          }
+
+                          final ts = a['timestamp'] ?? a['capturedAt'];
+                          final dt =
+                              _firestoreService.parseDateTimePublic(ts);
+                          if (dt != null && _isLate(dt)) {
+                            late += 1;
+                          }
+                        }
+
+                        final absent = daysInMonth - uniqueDays.length;
+                        final attendancePercentage =
+                            (uniqueDays.length / daysInMonth).clamp(0.0, 1.0);
+
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () {
+                                // Potentially navigate to detailed view
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      name,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w900,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (roleDisplay.isNotEmpty)
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(top: 2.0),
-                                        child: Text(
-                                          roleDisplay,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppTheme.textSecondary,
+                                    Row(
+                                      children: [
+                                        // Initials Avatar
+                                        Container(
+                                          width: 48,
+                                          height: 48,
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.primaryColor
+                                                .withOpacity(0.1),
+                                            shape: BoxShape.circle,
                                           ),
-                                          overflow: TextOverflow.ellipsis,
+                                          child: Center(
+                                            child: Text(
+                                              name.isNotEmpty
+                                                  ? name[0].toUpperCase()
+                                                  : '?',
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppTheme.primaryColor,
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                name,
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppTheme.textPrimary,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              if (roleDisplay.isNotEmpty)
+                                                Text(
+                                                  roleDisplay,
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        AppTheme.textSecondary,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: (attendancePercentage >= 0.8)
+                                                ? Colors.green.withOpacity(0.1)
+                                                : (attendancePercentage >= 0.5)
+                                                    ? Colors.orange
+                                                        .withOpacity(0.1)
+                                                    : Colors.red
+                                                        .withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            '${(attendancePercentage * 100).toInt()}%',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: (attendancePercentage >=
+                                                      0.8)
+                                                  ? Colors.green
+                                                  : (attendancePercentage >=
+                                                          0.5)
+                                                      ? Colors.orange
+                                                      : Colors.red,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 20),
+                                    // Stats Rows
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        _buildStatItem('Present', present,
+                                            Colors.green, Icons.check_circle),
+                                        _buildVerticalDivider(),
+                                        _buildStatItem('Pending', pending,
+                                            Colors.blue, Icons.hourglass_top),
+                                        _buildVerticalDivider(),
+                                        _buildStatItem('Rejected', rejected,
+                                            Colors.redAccent, Icons.cancel),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      height: 1,
+                                      color: Colors.grey.withOpacity(0.1),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        _buildStatItem('Late', late,
+                                            Colors.orange, Icons.access_time),
+                                        _buildVerticalDivider(),
+                                        _buildStatItem('Absent', absent,
+                                            Colors.grey, Icons.not_interested),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),
-                              Text(
-                                '${uniqueDays.length}/$daysInMonth',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  color: AppTheme.primaryColor,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              _chip('Present', present, Colors.green),
-                              _chip('Pending', pending, Colors.orange),
-                              _chip('Rejected', rejected, Colors.red),
-                              _chip('Late', late, Colors.purple),
-                              _chip('Absent', absent, Colors.grey),
-                            ],
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
                 );
               },
-            );
-          },
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _chip(String label, int count, Color color) {
+  Widget _buildVerticalDivider() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.25)),
-      ),
-      child: Text(
-        '$label: $count',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-          color: color,
-        ),
+      height: 24,
+      width: 1,
+      color: Colors.grey.withOpacity(0.2),
+    );
+  }
+
+  Widget _buildStatItem(
+      String label, int value, Color color, IconData icon) {
+    return Expanded(
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                value.toString(),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
       ),
     );
   }

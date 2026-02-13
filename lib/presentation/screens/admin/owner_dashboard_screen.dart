@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/presentation/providers/admin_dashboard_provider.dart';
 import 'package:restro/presentation/widgets/custom_appbar.dart';
@@ -24,13 +23,6 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: AppTheme.primaryColor,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
-    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider =
           Provider.of<AdminDashboardProvider>(context, listen: false);

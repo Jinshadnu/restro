@@ -224,582 +224,226 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     final bool showLate = widget.task.isLate || isLateComputed;
 
     return Scaffold(
-      backgroundColor: AppTheme.backGroundColor,
+      backgroundColor: AppTheme.primaryColor,
       appBar: AppBar(
-        title: const Text('Task Details'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header card
-
-              // /// Meta chips
-              // Wrap(
-              //   spacing: 8,
-              //   runSpacing: 8,
-              //   children: [
-              //     _buildStatusChip(
-              //       icon: Icons.flag,
-              //       label: widget.task.status.toString().split('.').last,
-              //       color: _getStatusColor(widget.task.status),
-              //     ),
-              //     if (showLate)
-              //       _buildStatusChip(
-              //         icon: Icons.access_time,
-              //         label: 'LATE',
-              //         color: Colors.red,
-              //       ),
-              //     _buildStatusChip(
-              //       icon: Icons.repeat,
-              //       label: widget.task.frequency.toString().split('.').last,
-              //       color: Colors.blue,
-              //     ),
-              //     _buildStatusChip(
-              //       icon: Icons.photo_camera_back_outlined,
-              //       label: _sop?.requiresPhoto == true
-              //           ? 'Photo Required'
-              //           : 'No Photo',
-              //       color: _sop?.requiresPhoto == true
-              //           ? Colors.orange
-              //           : Colors.grey,
-              //     ),
-              //     if (_sop != null)
-              //       _buildStatusChip(
-              //         icon: Icons.rule,
-              //         label: _sop!.title,
-              //         color: Colors.purple,
-              //       ),
-              //   ],
-              // ),
-
-              const SizedBox(height: 20),
-
-              // Task title and frequency card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppTheme.primaryColor,
-                      AppTheme.primaryColor.withOpacity(0.85),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.task.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.repeat, size: 16, color: Colors.white),
-                              const SizedBox(width: 6),
-                              Text(
-                                widget.task.frequency
-                                    .toString()
-                                    .split('.')
-                                    .last,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.photo_camera_back_outlined,
-                                  size: 16, color: Colors.white),
-                              const SizedBox(width: 6),
-                              Text(
-                                _sop?.requiresPhoto == true
-                                    ? 'Photo Required'
-                                    : 'No Photo',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.flag, size: 16, color: Colors.white),
-                              const SizedBox(width: 6),
-                              Text(
-                                widget.task.status.toString().split('.').last,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (showLate) ...[
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                  color: Colors.red.withOpacity(0.4)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.access_time,
-                                    size: 16, color: Colors.white),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'LATE',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// Timing card
-              _buildSectionCard(
-                title: 'Timing Information',
-                icon: Icons.schedule,
-                child: Column(
-                  children: [
-                    _buildInfoTile(
-                      icon: Icons.schedule,
-                      title: 'Planned Start',
-                      value: _formatDateTime(widget.task.plannedStartAt),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildInfoTile(
-                      icon: Icons.flag_outlined,
-                      title: 'Planned End',
-                      value: _formatDateTime(widget.task.plannedEndAt),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildInfoTile(
-                      icon: Icons.calendar_today,
-                      title: 'Due Date',
-                      value: _formatDate(widget.task.dueDate),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildInfoTile(
-                      icon: Icons.date_range,
-                      title: 'Created',
-                      value: _formatDate(widget.task.createdAt),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// Description
-              _buildSectionCard(
-                title: 'Task Description',
-                icon: Icons.description,
-                child: Text(
-                  widget.task.description.isNotEmpty
-                      ? widget.task.description
-                      : 'No description available.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.4,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ),
-
-              if (widget.task.rejectionReason != null &&
-                  widget.task.rejectionReason!.trim().isNotEmpty) ...[
-                const SizedBox(height: 20),
-                _buildSectionCard(
-                  title: 'Rejection Details',
-                  icon: Icons.feedback_outlined,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.task.rejectionReason!.trim(),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          height: 1.4,
-                          color: AppTheme.error,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (widget.task.rejectionMarkedImageUrl != null &&
-                          widget.task.rejectionMarkedImageUrl!
-                              .trim()
-                              .isNotEmpty) ...[
-                        const SizedBox(height: 14),
-                        GestureDetector(
-                          onTap: () => _openRejectionMarkedImage(
-                            widget.task.rejectionMarkedImageUrl!.trim(),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: Stack(
-                              children: [
-                                SizedBox(
-                                  height: 180,
-                                  width: double.infinity,
-                                  child: Image.network(
-                                    widget.task.rejectionMarkedImageUrl!.trim(),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.black.withOpacity(0.06),
-                                        alignment: Alignment.center,
-                                        child: const Icon(Icons.broken_image),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                Positioned(
-                                  right: 10,
-                                  bottom: 10,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.55),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.fullscreen,
-                                            size: 16, color: Colors.white),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          'Preview',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                      if (widget.task.rejectionVoiceNoteUrl != null &&
-                          widget.task.rejectionVoiceNoteUrl!
-                              .trim()
-                              .isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.06),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.red.withOpacity(0.15),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              _isRejectionVoiceLoading
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          AppTheme.error,
-                                        ),
-                                      ),
-                                    )
-                                  : Icon(
-                                      _isRejectionVoicePlaying
-                                          ? Icons.pause
-                                          : Icons.play_arrow,
-                                      color: AppTheme.error,
-                                      size: 20,
-                                    ),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                child: Text(
-                                  'Voice note attached',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              TextButton(
-                                onPressed: _isRejectionVoiceLoading
-                                    ? null
-                                    : _toggleRejectionVoicePlayback,
-                                child: Text(
-                                  _isRejectionVoicePlaying ? 'Pause' : 'Play',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: AppTheme.error,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-
-              /// SOP Steps Section
-              if (_isLoadingSOP)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (_sop != null && _sop!.steps.isNotEmpty) ...[
-                _buildSectionCard(
-                  title: 'SOP Steps',
-                  icon: Icons.rule,
-                  child: Column(
-                    children: _sop!.steps.asMap().entries.map((entry) {
-                      final step = entry.value;
-                      final stepNumber = entry.key + 1;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$stepNumber',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.primaryColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                step,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade800,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 30),
-
-              /// --- ACTION BUTTONS ---
-              _buildActionButtons(),
-
-              const SizedBox(height: 30),
-            ],
+        centerTitle: true,
+        title: const Text(
+          "Task Details",
+          style: TextStyle(
+              color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.arrow_back, color: Colors.white, size: 18),
           ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: [
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.more_horiz, color: Colors.white, size: 18),
+            ),
+            onPressed: () {
+              // Option to show more details or actions
+            },
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+      body: Column(
+        children: [
+          _buildHeader(showLate),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Task List',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        if (_sop != null && _sop!.steps.isNotEmpty)
+                           Text(
+                             '${_sop!.steps.length} Steps',
+                             style: const TextStyle(
+                               color: AppTheme.textSecondary,
+                               fontWeight: FontWeight.w500,
+                             ),
+                           ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.task.rejectionReason != null &&
+                              widget.task.rejectionReason!.trim().isNotEmpty) ...[
+                            _buildRejectionCard(),
+                            const SizedBox(height: 24),
+                          ],
+                          if (_isLoadingSOP)
+                            const Center(
+                                child: Padding(
+                              padding: EdgeInsets.all(20),
+                              child: CircularProgressIndicator(),
+                            ))
+                          else if (_sop != null && _sop!.steps.isNotEmpty)
+                            ..._sop!.steps.asMap().entries.map((entry) {
+                              return _buildSOPItem(
+                                  entry.key + 1, entry.value, isCompletedState);
+                            }).toList()
+                          else
+                             const Center(
+                               child: Padding(
+                                 padding: EdgeInsets.all(20.0),
+                                 child: Text(
+                                   "No specific steps defined.",
+                                   style: TextStyle(color: Colors.grey),
+                                 ),
+                               ),
+                             ),
+                           const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomSheet: Container(
+        color: const Color(0xFFF8FAFC),
+        padding: const EdgeInsets.all(24),
+        child: SafeArea(
+          child: _buildActionButtons(),
         ),
       ),
     );
   }
 
-  Widget _buildSectionCard(
-      {required String title, required IconData icon, required Widget child}) {
+  Widget _buildHeader(bool showLate) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(28, 10, 28, 40),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.04)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryColor,
+            AppTheme.primaryColor.withOpacity(0.8),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppTheme.primaryColor,
-                      AppTheme.primaryColor.withOpacity(0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(icon, color: Colors.white, size: 22),
+              _buildHeaderTag(
+                icon: Icons.calendar_today_rounded,
+                label: _formatDate(widget.task.dueDate),
               ),
-              const SizedBox(width: 16),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: AppTheme.textPrimary,
-                ),
+              const SizedBox(width: 10),
+              _buildHeaderTag(
+                icon: Icons.repeat_rounded,
+                label: widget.task.frequency.toString().split('.').last,
               ),
+              if (showLate) ...[
+                const SizedBox(width: 10),
+                _buildHeaderTag(
+                  icon: Icons.warning_amber_rounded,
+                  label: 'LATE',
+                  textColor: AppTheme.error,
+                  backgroundColor: Colors.white,
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: 20),
-          child,
+          const SizedBox(height: 24),
+          Text(
+            widget.task.title,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              height: 1.2,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            widget.task.description.isNotEmpty
+                ? widget.task.description
+                : 'No description provided.',
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.white.withOpacity(0.9),
+              height: 1.6,
+              fontWeight: FontWeight.w400,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusChip(
-      {required IconData icon, required String label, required Color color}) {
+  Widget _buildHeaderTag({
+    required IconData icon,
+    required String label,
+    Color? textColor,
+    Color? backgroundColor,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: backgroundColor ?? Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(icon, size: 14, color: textColor ?? Colors.white),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w700,
+              color: textColor ?? Colors.white,
+              fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
           ),
@@ -808,53 +452,74 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  Widget _buildInfoTile(
-      {required IconData icon, required String title, required String value}) {
+  Widget _buildSOPItem(int index, String text, bool isCompleted) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E2938).withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isCompleted
+                    ? AppTheme.primaryColor
+                    : Colors.grey.shade300,
+                width: 2,
+              ),
+              color: isCompleted ? AppTheme.primaryColor : Colors.transparent,
             ),
-            child: Icon(icon, size: 22, color: AppTheme.primaryColor),
+            child: isCompleted
+                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                : Center(
+                    child: Text(
+                      "$index",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+                  ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  "Step $index",
                   style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
+                    color: Colors.grey.shade400,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
-                  value,
+                  text,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey.shade800,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                    height: 1.5,
+                    decoration: isCompleted ? TextDecoration.lineThrough : null,
                   ),
                 ),
               ],
@@ -865,183 +530,306 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildRejectionCard() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.04)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFFFCA5A5).withOpacity(0.5)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.task.status == TaskStatus.rejected)
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  final allowed = await _guardCriticalTaskAction();
-                  if (!allowed || !mounted) return;
-
-                  setState(() => _isSubmitting = true);
-                  try {
-                    await Provider.of<TaskProvider>(context, listen: false)
-                        .reworkTask(widget.task.id);
-                    if (!mounted) return;
-                    Navigator.pushReplacementNamed(
-                      context,
-                      AppRoutes.startTask,
-                      arguments: widget.task,
-                    );
-                  } finally {
-                    if (mounted) setState(() => _isSubmitting = false);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  backgroundColor: Colors.orange,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Rework Task',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+          Row(
+            children: [
+              const Icon(Icons.error_outline_rounded,
+                  color: Color(0xFFEF4444), size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Task Rejected',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFEF4444),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            widget.task.rejectionReason!.trim(),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF7F1D1D),
+              height: 1.5,
             ),
-          // Only show Start Task button for pending/in-progress tasks
-          if (widget.task.status == TaskStatus.pending ||
-              widget.task.status == TaskStatus.inProgress)
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  final allowed = await _guardCriticalTaskAction();
-                  if (!allowed || !mounted) return;
-
-                  Navigator.pushReplacementNamed(
-                    context,
-                    AppRoutes.startTask,
-                    arguments: widget.task,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  backgroundColor: AppTheme.primaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                  shadowColor: AppTheme.primaryColor.withOpacity(0.3),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.play_arrow_rounded,
-                        color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
-                    const Text(
-                      "Start Task",
-                      style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
+          ),
+          if (widget.task.rejectionMarkedImageUrl != null &&
+              widget.task.rejectionMarkedImageUrl!.trim().isNotEmpty) ...[
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () => _openRejectionMarkedImage(
+                widget.task.rejectionMarkedImageUrl!.trim(),
               ),
-            ),
-          // Show submitted status for completed tasks
-          if (widget.task.status == TaskStatus.completed ||
-              widget.task.status == TaskStatus.verificationPending)
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.orange.shade100,
-                      Colors.orange.shade50,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Stack(
                   children: [
-                    Icon(
-                      Icons.hourglass_empty,
-                      color: Colors.orange.shade700,
-                      size: 20,
+                     SizedBox(
+                      height: 160,
+                      width: double.infinity,
+                      child: Image.network(
+                        widget.task.rejectionMarkedImageUrl!.trim(),
+                        fit: BoxFit.cover,
+                         errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[200],
+                              alignment: Alignment.center,
+                              child: const Icon(Icons.broken_image),
+                            );
+                          },
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Submitted for verification",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.orange.shade700,
-                        fontWeight: FontWeight.w700,
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.1),
+                        child: const Center(
+                          child: Icon(Icons.zoom_in,
+                              color: Colors.white, size: 32),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          // if (widget.task.status == TaskStatus.pending ||
-          //     widget.task.status == TaskStatus.inProgress) ...[
-          //   const SizedBox(width: 12),
-          //   // Camera button for quick submission
-          //   ElevatedButton(
-          //     onPressed: _isSubmitting ? null : _handleQuickCameraSubmit,
-          //     style: ElevatedButton.styleFrom(
-          //       padding:
-          //           const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-          //       backgroundColor: Colors.green,
-          //       shape: RoundedRectangleBorder(
-          //         borderRadius: BorderRadius.circular(16),
-          //       ),
-          //       elevation: 0,
-          //       shadowColor: Colors.green.withOpacity(0.3),
-          //     ),
-          //     child: _isSubmitting
-          //         ? const SizedBox(
-          //             width: 20,
-          //             height: 20,
-          //             child: CircularProgressIndicator(
-          //               strokeWidth: 2,
-          //               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          //             ),
-          //           )
-          //         : Row(
-          //             mainAxisAlignment: MainAxisAlignment.center,
-          //             children: [
-          //               Icon(Icons.camera_alt, color: Colors.white, size: 20),
-          //               const SizedBox(width: 8),
-          //               const Text(
-          //                 "Submit",
-          //                 style: TextStyle(
-          //                     fontSize: 16,
-          //                     color: Colors.white,
-          //                     fontWeight: FontWeight.w700),
-          //               ),
-          //             ],
+          ],
+          if (widget.task.rejectionVoiceNoteUrl != null &&
+              widget.task.rejectionVoiceNoteUrl!.trim().isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: _isRejectionVoiceLoading
+                        ? null
+                        : _toggleRejectionVoicePlayback,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEF4444),
+                        shape: BoxShape.circle,
+                      ),
+                      child: _isRejectionVoiceLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Icon(
+                              _isRejectionVoicePlaying
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Play Rejection Note',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF7F1D1D),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Widget _buildActionButtons() {
+    Widget? mainButton;
+
+    if (widget.task.status == TaskStatus.rejected) {
+      mainButton = ElevatedButton(
+        onPressed: () async {
+          final allowed = await _guardCriticalTaskAction();
+          if (!allowed || !mounted) return;
+
+          setState(() => _isSubmitting = true);
+          try {
+            await Provider.of<TaskProvider>(context, listen: false)
+                .reworkTask(widget.task.id);
+            if (!mounted) return;
+            Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.startTask,
+              arguments: widget.task,
+            );
+          } finally {
+            if (mounted) setState(() => _isSubmitting = false);
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF1E2938), // Dark button
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 0,
+        ),
+        child: _isSubmitting
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Text(
+                'Rework Task',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+      );
+    } else if (widget.task.status == TaskStatus.pending ||
+        widget.task.status == TaskStatus.inProgress) {
+      mainButton = Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [
+              AppTheme.primaryColor,
+              AppTheme.primaryLight,
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              final allowed = await _guardCriticalTaskAction();
+              if (!allowed || !mounted) return;
+
+              Navigator.pushReplacementNamed(
+                context,
+                AppRoutes.startTask,
+                arguments: widget.task,
+              );
+            },
+            borderRadius: BorderRadius.circular(24),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.play_arrow_rounded,
+                        color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Start Task',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    } else if (widget.task.status == TaskStatus.completed ||
+        widget.task.status == TaskStatus.verificationPending) {
+       mainButton = Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF7ED),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.hourglass_empty_rounded,
+                color: Colors.orange, size: 22),
+            SizedBox(width: 10),
+            Text(
+              'Submitted',
+              style: TextStyle(
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (widget.task.status == TaskStatus.approved) {
+       mainButton = Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.green.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.check_circle_rounded,
+                color: Colors.green, size: 22),
+            SizedBox(width: 10),
+            Text(
+              'Approved',
+              style: TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return mainButton ?? const SizedBox.shrink();
   }
 
   Color _getStatusColor(dynamic status) {

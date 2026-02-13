@@ -128,6 +128,16 @@ class MyApp extends StatelessWidget {
       navigatorKey: rootNavigatorKey,
       initialRoute: '/',
       onGenerateRoute: AppRoutes.generateRoute,
+      builder: (context, child) {
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: AppTheme.primaryColor,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

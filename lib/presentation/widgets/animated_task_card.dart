@@ -124,6 +124,9 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
   @override
   Widget build(BuildContext context) {
     final statusColor = _statusColor;
+    final subtitle = widget.task.description.trim().isNotEmpty
+        ? widget.task.description.trim()
+        : (widget.task.sopid.trim().isNotEmpty ? 'Scheduled Task' : 'Task');
 
     return FadeTransition(
       opacity: _fade,
@@ -182,12 +185,14 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Pending Task',
+                                subtitle,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
                                   fontWeight: FontWeight.w500,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -208,7 +213,9 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
                                 ),
                               ),
                               child: Text(
-                                _isFuture ? 'Future' : 'Pending',
+                                _isFuture
+                                    ? 'Future'
+                                    : _getHumanReadableStatus(),
                                 style: TextStyle(
                                   color: statusColor,
                                   fontWeight: FontWeight.w700,

@@ -55,6 +55,18 @@ class _StaffMyAttendanceScreenState extends State<StaffMyAttendanceScreen> {
       initialDate: _selectedMonth,
       firstDate: DateTime(2024, 1, 1),
       lastDate: DateTime(2100, 12, 31),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryColor,
+              onPrimary: Colors.white,
+              onSurface: AppTheme.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked == null) return;
 
@@ -71,11 +83,6 @@ class _StaffMyAttendanceScreenState extends State<StaffMyAttendanceScreen> {
     if (uid.isEmpty) {
       return Scaffold(
         backgroundColor: AppTheme.backGroundColor,
-        appBar: AppBar(
-          title: const Text('My Attendance'),
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
-        ),
         body: const Center(child: Text('Not authorized')),
       );
     }
@@ -87,162 +94,312 @@ class _StaffMyAttendanceScreenState extends State<StaffMyAttendanceScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'My Attendance',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-      body: SafeArea(
-        child: StreamBuilder<List<Map<String, dynamic>>>(
-          stream: _firestoreService.streamAttendanceForUserDateRange(
-            uid,
-            startStr,
-            endStr,
+      body: Column(
+        children: [
+          // Custom Header
+          Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 20,
+              bottom: 30,
+              left: 20,
+              right: 20,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryColor,
+                  AppTheme.primaryColor.withOpacity(0.85),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const Text(
+                      'Attendance',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 40), // Balance the back button
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Month Picker Button
+                Center(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _pickMonth,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.calendar_month_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              _monthLabel(_selectedMonth),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Colors.white.withOpacity(0.8),
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppTheme.primaryColor),
-              );
-            }
-            if (snap.hasError) {
-              return Center(child: Text('Error: ${snap.error}'));
-            }
 
-            final records = snap.data ?? [];
+          // Body Content
+          Expanded(
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _firestoreService.streamAttendanceForUserDateRange(
+                uid,
+                startStr,
+                endStr,
+              ),
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryColor,
+                    ),
+                  );
+                }
+                if (snap.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error loading data',
+                      style: TextStyle(color: Colors.red[400]),
+                    ),
+                  );
+                }
 
-            final byDate = <String, Map<String, dynamic>>{};
-            for (final a in records) {
-              final d = (a['dateStr'] ?? '').toString();
-              if (d.isEmpty) continue;
-              byDate[d] = a;
-            }
+                final records = snap.data ?? [];
 
-            DateTime? parseTs(dynamic raw) {
-              if (raw == null) return null;
-              if (raw is DateTime) return raw;
-              final rawType = raw.runtimeType.toString();
-              if (rawType == 'Timestamp' || rawType.endsWith('Timestamp')) {
-                try {
-                  return (raw as dynamic).toDate() as DateTime;
-                } catch (_) {
+                final byDate = <String, Map<String, dynamic>>{};
+                for (final a in records) {
+                  final d = (a['dateStr'] ?? '').toString();
+                  if (d.isEmpty) continue;
+                  byDate[d] = a;
+                }
+
+                DateTime? parseTs(dynamic raw) {
+                  if (raw == null) return null;
+                  if (raw is DateTime) return raw;
+                  final rawType = raw.runtimeType.toString();
+                  if (rawType == 'Timestamp' || rawType.endsWith('Timestamp')) {
+                    try {
+                      return (raw as dynamic).toDate() as DateTime;
+                    } catch (_) {
+                      return null;
+                    }
+                  }
+                  if (raw is String) return DateTime.tryParse(raw);
                   return null;
                 }
-              }
-              if (raw is String) return DateTime.tryParse(raw);
-              return null;
-            }
 
-            int approved = 0;
-            int pending = 0;
-            int late = 0;
+                int approved = 0;
+                int pending = 0;
+                int late = 0;
 
-            for (final e in byDate.entries) {
-              final a = e.value;
-              final status = (a['verification_status'] ?? a['status'] ?? '')
-                  .toString()
-                  .toLowerCase();
+                for (final e in byDate.entries) {
+                  final a = e.value;
+                  final status = (a['verification_status'] ?? a['status'] ?? '')
+                      .toString()
+                      .toLowerCase();
 
-              if (status == 'approved' || status == 'verified') {
-                approved += 1;
-              } else {
-                pending += 1;
-              }
+                  if (status == 'approved' || status == 'verified') {
+                    approved += 1;
+                  } else {
+                    pending += 1;
+                  }
 
-              final ts = parseTs(a['timestamp'] ?? a['capturedAt']);
-              if (ts != null && _isLate(ts)) late += 1;
-            }
+                  final ts = parseTs(a['timestamp'] ?? a['capturedAt']);
+                  if (ts != null && _isLate(ts)) late += 1;
+                }
 
-            final consideredDays = _daysConsidered(_selectedMonth);
-            final marked = byDate.length;
-            final absent = (consideredDays - marked).clamp(0, consideredDays);
+                final consideredDays = _daysConsidered(_selectedMonth);
+                final marked = byDate.length;
+                final absent =
+                    (consideredDays - marked).clamp(0, consideredDays);
 
-            final dayRows = <_AttendanceDayRow>[];
-            for (int i = 0; i < _daysInMonth(_selectedMonth); i++) {
-              final d =
-                  DateTime(_selectedMonth.year, _selectedMonth.month, i + 1);
-              final ds = _dateStr(d);
-              final a = byDate[ds];
+                final dayRows = <_AttendanceDayRow>[];
+                for (int i = 0; i < _daysInMonth(_selectedMonth); i++) {
+                  final d = DateTime(
+                      _selectedMonth.year, _selectedMonth.month, i + 1);
+                  final ds = _dateStr(d);
+                  final a = byDate[ds];
 
-              DateTime? captured;
-              if (a != null) {
-                captured = parseTs(a['timestamp'] ?? a['capturedAt']);
-              }
+                  DateTime? captured;
+                  if (a != null) {
+                    captured = parseTs(a['timestamp'] ?? a['capturedAt']);
+                  }
 
-              final status = a == null
-                  ? _AttendanceDayStatus.absent
-                  : _dayStatusFromRaw(
-                      (a['verification_status'] ?? a['status'] ?? '')
-                          .toString(),
-                    );
+                  final status = a == null
+                      ? _AttendanceDayStatus.absent
+                      : _dayStatusFromRaw(
+                          (a['verification_status'] ?? a['status'] ?? '')
+                              .toString(),
+                        );
 
-              dayRows.add(
-                _AttendanceDayRow(
-                  date: d,
-                  status: status,
-                  capturedAt: captured,
-                  isLate: captured != null ? _isLate(captured) : false,
-                  note: a == null ? null : (a['rejectionReason']?.toString()),
-                ),
-              );
-            }
+                  dayRows.add(
+                    _AttendanceDayRow(
+                      date: d,
+                      status: status,
+                      capturedAt: captured,
+                      isLate: captured != null ? _isLate(captured) : false,
+                      note:
+                          a == null ? null : (a['rejectionReason']?.toString()),
+                    ),
+                  );
+                }
 
-            final weeks = _groupIntoWeeks(dayRows);
+                final weeks = _groupIntoWeeks(dayRows);
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _MonthPickerField(
-                    label: _monthLabel(_selectedMonth),
-                    onTap: _pickMonth,
+                final screenWidth = MediaQuery.of(context).size.width;
+                final textScale =
+                    MediaQuery.textScaleFactorOf(context).clamp(1.0, 1.4);
+                final baseRatio = screenWidth < 360 ? 1.35 : 1.6;
+                // Reduce ratio for larger text scale -> cards become taller.
+                final metricsAspectRatio =
+                    (baseRatio / textScale).clamp(0.95, baseRatio);
+
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(
+                    top: 20,
+                    left: 20,
+                    right: 20,
+                    bottom: 40,
                   ),
-                  const SizedBox(height: 14),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 2.25,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _MetricCard(
-                        title: 'Late In',
-                        value: late,
-                        color: const Color(0xFFE53935),
+                      // Metrics Grid
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: metricsAspectRatio,
+                        children: [
+                          _MetricCard(
+                            title: 'Approved',
+                            value: approved,
+                            icon: Icons.check_circle_outline_rounded,
+                            color: const Color(0xFF43A047),
+                            bgColor: const Color(0xFFE8F5E9),
+                          ),
+                          _MetricCard(
+                            title: 'Late In',
+                            value: late,
+                            icon: Icons.access_time_rounded,
+                            color: const Color(0xFFE53935),
+                            bgColor: const Color(0xFFFFEBEE),
+                          ),
+                          _MetricCard(
+                            title: 'Absents',
+                            value: absent,
+                            icon: Icons.cancel_outlined,
+                            color: const Color(0xFF7E57C2),
+                            bgColor: const Color(0xFFEDE7F6),
+                          ),
+                          _MetricCard(
+                            title: 'Pending',
+                            value: pending,
+                            icon: Icons.hourglass_empty_rounded,
+                            color: const Color(0xFFFFA000),
+                            bgColor: const Color(0xFFFFF8E1),
+                          ),
+                        ],
                       ),
-                      _MetricCard(
-                        title: 'Absents',
-                        value: absent,
-                        color: const Color(0xFF7E57C2),
+
+                      const SizedBox(height: 32),
+                      const Text(
+                        'Weekly Breakdown',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
                       ),
-                      _MetricCard(
-                        title: 'Pending',
-                        value: pending,
-                        color: const Color(0xFFFFA000),
-                      ),
-                      _MetricCard(
-                        title: 'Approved',
-                        value: approved,
-                        color: const Color(0xFF43A047),
-                      ),
+                      const SizedBox(height: 16),
+
+                      for (final w in weeks) ...[
+                        _WeekCard(week: w),
+                        const SizedBox(height: 24),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  for (final w in weeks) ...[
-                    _WeekCard(week: w),
-                    const SizedBox(height: 14),
-                  ],
-                ],
-              ),
-            );
-          },
-        ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -317,132 +474,90 @@ List<_AttendanceWeek> _groupIntoWeeks(List<_AttendanceDayRow> days) {
   return weeks;
 }
 
-class _MonthPickerField extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _MonthPickerField({
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black.withOpacity(0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF4F6F8),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.black.withOpacity(0.06)),
-              ),
-              child: const Icon(Icons.calendar_today_outlined, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: Colors.black.withOpacity(0.5),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _MetricCard extends StatelessWidget {
   final String title;
   final int value;
+  final IconData icon;
   final Color color;
+  final Color bgColor;
 
   const _MetricCard({
     required this.title,
     required this.value,
     required this.color,
+    required this.bgColor,
+    required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.35)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final h = constraints.maxHeight;
+        final pad = (h * 0.11).clamp(8.0, 13.0);
+        final iconPad = (h * 0.07).clamp(6.0, 9.0);
+        final iconSize = (h * 0.17).clamp(18.0, 21.0);
+        final valueSize = (h * 0.27).clamp(18.0, 25.0);
+        final titleSize = (h * 0.125).clamp(10.0, 12.5);
+
+        return Container(
+          padding: EdgeInsets.all(pad),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 34,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(iconPad),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: iconSize),
+              ),
+              const Spacer(),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
                   value.toString(),
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: color,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: valueSize,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textPrimary,
+                    height: 1,
+                  ),
+                  maxLines: 1,
+                ),
+              ),
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textSecondary.withOpacity(0.75),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -453,105 +568,55 @@ class _WeekCard extends StatelessWidget {
   const _WeekCard({required this.week});
 
   String _weekLabel() {
-    final start = DateFormat('dd MMM').format(week.start);
-    final end = DateFormat('dd MMM').format(week.end);
+    final start = DateFormat('MMMM d').format(week.start);
+    final end = DateFormat('d, yyyy').format(week.end);
     return '$start - $end';
   }
 
   @override
   Widget build(BuildContext context) {
-    int approved = 0;
-    int pending = 0;
-    int rejected = 0;
-    int absent = 0;
-    int late = 0;
-
-    for (final d in week.days) {
-      if (d.status == _AttendanceDayStatus.approved) approved += 1;
-      if (d.status == _AttendanceDayStatus.pending) pending += 1;
-      if (d.status == _AttendanceDayStatus.rejected) rejected += 1;
-      if (d.status == _AttendanceDayStatus.absent) absent += 1;
-      if (d.isLate) late += 1;
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            _weekLabel(),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textSecondary.withOpacity(0.8),
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Week',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _weekLabel(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Wrap(
-                spacing: 6,
-                children: [
-                  if (absent > 0) _miniPill('Absent', absent, Colors.red),
-                  if (pending > 0) _miniPill('Pending', pending, Colors.orange),
-                  if (approved > 0) _miniPill('Ok', approved, Colors.green),
-                  if (rejected > 0) _miniPill('Rej', rejected, Colors.purple),
-                  if (late > 0) _miniPill('Late', late, Colors.brown),
-                ],
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
+            border: Border.all(color: Colors.grey.withOpacity(0.1)),
           ),
-          const SizedBox(height: 12),
-          Column(
-            children: week.days.map((d) => _DayTile(day: d)).toList(),
+          child: Column(
+            children: [
+              for (int i = 0; i < week.days.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Colors.grey.withOpacity(0.08),
+                  ),
+                _DayTile(day: week.days[i]),
+              ],
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _miniPill(String label, int count, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.22)),
-      ),
-      child: Text(
-        '$count $label',
-        style: TextStyle(
-          fontWeight: FontWeight.w900,
-          fontSize: 11,
-          color: color,
         ),
-      ),
+      ],
     );
   }
 }
@@ -563,86 +628,106 @@ class _DayTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateNumber = DateFormat('dd').format(day.date);
+    final dateNumber = DateFormat('d').format(day.date);
     final weekday = DateFormat('EEE').format(day.date);
 
     final capturedLabel = day.capturedAt == null
-        ? '-'
+        ? 'Not marked'
         : DateFormat('hh:mm a').format(day.capturedAt!.toLocal());
 
-    final statusChip = _statusChip();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAFBFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
+          // Date Column
           Container(
-            width: 54,
-            padding: const EdgeInsets.symmetric(vertical: 10),
+            width: 50,
+            padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.black.withOpacity(0.06)),
+              color: const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.withOpacity(0.1)),
             ),
             child: Column(
               children: [
                 Text(
-                  dateNumber,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                    color: AppTheme.textPrimary,
+                  weekday.toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    color: AppTheme.textSecondary.withOpacity(0.7),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  weekday,
+                  dateNumber,
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
-                    fontSize: 11,
-                    color: AppTheme.textSecondary,
+                    fontSize: 16,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
+          // Info Column
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Selfie: $capturedLabel',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          color: AppTheme.textPrimary,
-                        ),
+                    _statusDot(),
+                    const SizedBox(width: 6),
+                    Text(
+                      _statusLabel(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: _statusColor(),
                       ),
                     ),
-                    statusChip,
                   ],
                 ),
-                if (day.isLate)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      'Marked late',
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.camera_alt_outlined,
+                      size: 14,
+                      color: AppTheme.textSecondary.withOpacity(0.6),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      capturedLabel,
                       style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                        color: Colors.brown.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                        color: AppTheme.textSecondary.withOpacity(0.8),
                       ),
                     ),
-                  ),
+                    if (day.isLate) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEBEE),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'LATE',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFE53935),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 if (day.status == _AttendanceDayStatus.rejected &&
                     day.note != null &&
                     day.note!.trim().isNotEmpty)
@@ -650,12 +735,11 @@ class _DayTile extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
                       day.note!.trim(),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
                         fontSize: 12,
-                        color: Colors.black.withOpacity(0.55),
+                        color: Color(0xFFD32F2F),
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
@@ -667,34 +751,39 @@ class _DayTile extends StatelessWidget {
     );
   }
 
-  Widget _statusChip() {
+  String _statusLabel() {
     switch (day.status) {
       case _AttendanceDayStatus.absent:
-        return _chip('Absent', const Color(0xFFE53935));
+        return 'Absent';
       case _AttendanceDayStatus.pending:
-        return _chip('Pending', const Color(0xFFFFA000));
+        return 'Pending Review';
       case _AttendanceDayStatus.approved:
-        return _chip('Approved', const Color(0xFF43A047));
+        return 'Present';
       case _AttendanceDayStatus.rejected:
-        return _chip('Rejected', const Color(0xFF7E57C2));
+        return 'Rejected';
     }
   }
 
-  Widget _chip(String label, Color color) {
+  Color _statusColor() {
+    switch (day.status) {
+      case _AttendanceDayStatus.absent:
+        return Colors.grey.shade400;
+      case _AttendanceDayStatus.pending:
+        return const Color(0xFFFFA000);
+      case _AttendanceDayStatus.approved:
+        return AppTheme.primaryColor;
+      case _AttendanceDayStatus.rejected:
+        return const Color(0xFFE53935);
+    }
+  }
+
+  Widget _statusDot() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      width: 8,
+      height: 8,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.20)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontWeight: FontWeight.w900,
-          fontSize: 11,
-          color: color,
-        ),
+        color: _statusColor(),
+        shape: BoxShape.circle,
       ),
     );
   }

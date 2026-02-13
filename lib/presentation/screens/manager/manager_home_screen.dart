@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/domain/entities/task_entity.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
@@ -25,13 +24,6 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: AppTheme.primaryColor,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
-    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthenticationProvider>(context, listen: false);
       final taskProvider = Provider.of<TaskProvider>(context, listen: false);

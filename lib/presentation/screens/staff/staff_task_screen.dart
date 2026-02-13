@@ -27,6 +27,31 @@ class _StaffTaskScreenState extends State<StaffTaskScreen> {
   Stream<List<TaskEntity>>? _pendingTasksStream;
   String? _streamUserId;
 
+  bool _looksLikeId(String value) {
+    final v = value.trim();
+    if (v.length < 16) return false;
+    final noDashes = v.replaceAll('-', '');
+    final hexLike = RegExp(r'^[a-fA-F0-9]+$');
+    if (hexLike.hasMatch(noDashes) && noDashes.length >= 24) return true;
+    final baseLike = RegExp(r'^[a-zA-Z0-9]+$');
+    return baseLike.hasMatch(v) && v.length >= 20;
+  }
+
+  bool _isDummyTask(TaskEntity task) {
+    final title = task.title.trim();
+    final desc = task.description.trim();
+    if (task.id.trim().isEmpty) return true;
+    if (task.assignedTo.trim().isEmpty) return true;
+    if (task.sopid.trim().isEmpty) return true;
+
+    final normalizedTitle = title.toLowerCase();
+    if (normalizedTitle.isEmpty) return true;
+    if (normalizedTitle == 'pending task') return true;
+    if (_looksLikeId(title) && desc.isEmpty) return true;
+
+    return false;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -166,7 +191,9 @@ class _StaffTaskScreenState extends State<StaffTaskScreen> {
                       );
                     }
 
-                    final tasks = snapshot.data ?? [];
+                    final tasks = (snapshot.data ?? [])
+                        .where((t) => !_isDummyTask(t))
+                        .toList();
 
                     final filtered = _selectedFrequency == null
                         ? tasks
