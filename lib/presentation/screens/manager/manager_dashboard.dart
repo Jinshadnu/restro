@@ -7,7 +7,12 @@ import 'package:restro/presentation/screens/manager/manager_profile_screen.dart'
 import 'package:restro/utils/theme/theme.dart';
 
 class ManagerDashboard extends StatefulWidget {
-  const ManagerDashboard({super.key});
+  final List<Widget>? screensOverride;
+
+  const ManagerDashboard({
+    super.key,
+    this.screensOverride,
+  });
 
   @override
   State<ManagerDashboard> createState() => _ManagerDashboardState();
@@ -46,13 +51,14 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
     ),
   ];
 
-  final List<Widget> _screens = [
-    const ManagerHomeScreen(),
-    const ManagerAssignTaskScreen(),
-    const ManagerAddSopScreen(),
-    const ManagerVerificationScreen(),
-    const ManagerProfileScreen(),
-  ];
+  late final List<Widget> _screens = widget.screensOverride ??
+      [
+        const ManagerHomeScreen(),
+        const ManagerAssignTaskScreen(),
+        const ManagerAddSopScreen(),
+        const ManagerVerificationScreen(),
+        const ManagerProfileScreen(),
+      ];
 
   // Method to switch tabs programmatically
   void switchToTab(int index) {

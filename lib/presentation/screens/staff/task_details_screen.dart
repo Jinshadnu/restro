@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:restro/utils/app_logger.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/data/models/task_model.dart';
 import 'package:restro/data/models/sop_model.dart';
@@ -106,12 +107,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'Not set';
-    return DateFormat('MMM d, y').format(date);
+    return DateFormat('MMM d, y').format(date.toLocal());
   }
 
   String _formatDateTime(DateTime? date) {
     if (date == null) return 'Not set';
-    return DateFormat('MMM d, y • h:mm a').format(date);
+    return DateFormat('MMM d, y • h:mm a').format(date.toLocal());
   }
 
   @override
@@ -1062,6 +1063,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Future<void> _handleQuickCameraSubmit() async {
+    if (_isSubmitting) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     try {
       final allowed = await _guardCriticalTaskAction();
       if (!allowed || !mounted) return;
@@ -1070,7 +1075,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       final cameraStatus = await Permission.camera.request();
       if (!cameraStatus.isGranted) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Camera permission is required to submit task'),
             backgroundColor: Colors.red,
@@ -1094,7 +1099,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         _isSubmitting = true;
       });
 
-      final taskProvider = Provider.of<TaskProvider>(context, listen: false);
       await taskProvider.completeTask(
         widget.task.id,
         photo: File(photo.path),
@@ -1104,19 +1108,26 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
       // Show success dialog and redirect to staff home
       await _showTaskSuccessDialog();
-    } catch (e) {
+    } catch (e, st) {
+      AppLogger.e(
+        'TaskDetailsScreen',
+        e,
+        st,
+        message: '_handleQuickCameraSubmit failed taskId=${widget.task.id}',
+      );
       if (!mounted) return;
-
-      setState(() {
-        _isSubmitting = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Failed to submit task: $e'),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 

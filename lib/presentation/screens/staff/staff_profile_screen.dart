@@ -219,10 +219,10 @@ class StaffProfileScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _buildSettingsItem(
-                          icon: Icons.lock_outline_rounded,
-                          title: "Change Password",
+                          icon: Icons.calendar_month_outlined,
+                          title: "My Attendance",
                           onTap: () => Navigator.pushNamed(
-                              context, AppRoutes.changePassword),
+                              context, AppRoutes.staffMyAttendance),
                           showDivider: true,
                         ),
                         _buildSettingsItem(

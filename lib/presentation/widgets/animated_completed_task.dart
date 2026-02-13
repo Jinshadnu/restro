@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:restro/data/models/completed_task_model.dart';
 import 'package:restro/utils/theme/theme.dart';
 
@@ -59,6 +60,13 @@ class _CompletedAnimatedTaskCardState extends State<AnimatedCompletedTask>
   // **Left Border Color Based on Status**
   Color getStatusColor() => widget.task.statusColor;
 
+  String _shortId(String id) {
+    final v = id.trim();
+    if (v.isEmpty) return '-';
+    if (v.length <= 10) return v;
+    return '${v.substring(0, 6)}...${v.substring(v.length - 4)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
@@ -115,6 +123,30 @@ class _CompletedAnimatedTaskCardState extends State<AnimatedCompletedTask>
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
                                   fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              GestureDetector(
+                                onLongPress: () async {
+                                  final id = widget.task.id.trim();
+                                  if (id.isEmpty) return;
+                                  await Clipboard.setData(
+                                      ClipboardData(text: id));
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Task ID copied'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'ID: ${_shortId(widget.task.id)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],

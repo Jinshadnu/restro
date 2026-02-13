@@ -1,5 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,84 +25,95 @@ import 'package:restro/utils/theme/theme.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:restro/utils/app_logger.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: AppTheme.primaryColor,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-    ),
-  );
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    final st = details.stack ?? StackTrace.current;
+    AppLogger.e('FlutterError', details.exception, st);
+  };
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppLogger.e('PlatformDispatcher', error, stack);
+    return true;
+  };
 
-  await FirebaseAppCheck.instance.activate(
-    androidProvider:
-        kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
-  );
+  await runZonedGuarded(() async {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: AppTheme.primaryColor,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+    );
 
-  // Initialize notification service (local notifications only)
-  await NotificationService().initialize(navigatorKey: rootNavigatorKey);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  // Initialize local database
-  await DatabaseHelper.instance.database;
+    await FirebaseAppCheck.instance.activate(
+      androidProvider:
+          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+    );
 
-  if (kDebugMode) {
-    await LocationService.enableTestingGeofenceBypass(true);
-    await LocationService.setShopLocationToCurrentLocation();
-  }
+    await NotificationService().initialize(navigatorKey: rootNavigatorKey);
 
-  final remoteDataSource = AuthRemoteDataSourceImpl(
-    auth: FirebaseAuth.instance,
-    firestore: FirebaseFirestore.instance,
-  );
+    await DatabaseHelper.instance.database;
 
-  final authRepository = AuthRepositoryImpl(remoteDataSource);
+    if (kDebugMode) {
+      await LocationService.enableTestingGeofenceBypass(true);
+      await LocationService.setShopLocationToCurrentLocation();
+    }
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthenticationProvider(authRepository),
-        ),
+    final remoteDataSource = AuthRemoteDataSourceImpl(
+      auth: FirebaseAuth.instance,
+      firestore: FirebaseFirestore.instance,
+    );
 
-        ChangeNotifierProvider(
-          create: (_) => AdminDashboardProvider(),
-        ),
+    final authRepository = AuthRepositoryImpl(remoteDataSource);
 
-        // other providers...
-        ChangeNotifierProvider(create: (_) => TaskProvider()),
-        ChangeNotifierProvider(create: (_) => SopProvider()),
-        ChangeNotifierProvider(create: (_) => AdminProfileProvider()),
-        ChangeNotifierProvider(create: (_) => CompletedTaskProvider()),
-        ChangeNotifierProvider(create: (_) => ChangePasswordProvider()),
-        ChangeNotifierProvider(create: (_) => DailyScoreProvider()),
-        ChangeNotifierProvider(
-          create: (_) => TaskDetailsProvider(
-            title: "Kitchen Cleaning",
-            description:
-                "Deep clean the entire kitchen area including shelves.",
-            assignedTo: "John Doe",
-            status: "Pending",
-            deadline: "12 Jan 2025",
-            activity: [
-              "Task created",
-              "Assigned to John",
-            ],
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+            create: (_) => AuthenticationProvider(authRepository),
           ),
-        ),
-      ],
-      child: const MyApp(),
-    ),
-  );
+          ChangeNotifierProvider(
+            create: (_) => AdminDashboardProvider(),
+          ),
+          ChangeNotifierProvider(create: (_) => TaskProvider()),
+          ChangeNotifierProvider(create: (_) => SopProvider()),
+          ChangeNotifierProvider(create: (_) => AdminProfileProvider()),
+          ChangeNotifierProvider(create: (_) => CompletedTaskProvider()),
+          ChangeNotifierProvider(create: (_) => ChangePasswordProvider()),
+          ChangeNotifierProvider(create: (_) => DailyScoreProvider()),
+          ChangeNotifierProvider(
+            create: (_) => TaskDetailsProvider(
+              title: "Kitchen Cleaning",
+              description:
+                  "Deep clean the entire kitchen area including shelves.",
+              assignedTo: "John Doe",
+              status: "Pending",
+              deadline: "12 Jan 2025",
+              activity: [
+                "Task created",
+                "Assigned to John",
+              ],
+            ),
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
+  }, (error, stack) {
+    AppLogger.e('Zone', error, stack);
+  });
 }
 
 class MyApp extends StatelessWidget {

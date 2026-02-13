@@ -55,6 +55,89 @@ class FirestoreService {
     });
   }
 
+  Stream<List<TaskModel>> streamTasksAssignedBy(String assignedBy) {
+    final id = assignedBy.trim();
+    if (id.isEmpty) return Stream.value(<TaskModel>[]);
+
+    return _firestore
+        .collection('tasks')
+        .where('assignedBy', isEqualTo: id)
+        .snapshots()
+        .map((snapshot) {
+      final list = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return TaskModel.fromJson(data);
+      }).toList();
+
+      list.sort((a, b) {
+        final ac = a.createdAt;
+        final bc = b.createdAt;
+        return bc.compareTo(ac);
+      });
+
+      return list;
+    });
+  }
+
+  Stream<List<TaskModel>> streamTasksByFrequency(String frequency) {
+    final f = frequency.trim();
+    if (f.isEmpty) return Stream.value(<TaskModel>[]);
+
+    return _firestore
+        .collection('tasks')
+        .where('frequency', isEqualTo: f)
+        .snapshots()
+        .map((snapshot) {
+      final list = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return TaskModel.fromJson(data);
+      }).toList();
+
+      list.sort((a, b) {
+        final ac = a.createdAt;
+        final bc = b.createdAt;
+        return bc.compareTo(ac);
+      });
+
+      return list;
+    });
+  }
+
+  Stream<List<TaskModel>> streamTasksForDueDateRange(
+    String startDueIso,
+    String endDueIso,
+  ) {
+    final start = startDueIso.trim();
+    final end = endDueIso.trim();
+    if (start.isEmpty || end.isEmpty) return Stream.value(<TaskModel>[]);
+
+    return _firestore
+        .collection('tasks')
+        .where('dueDate', isGreaterThanOrEqualTo: start)
+        .where('dueDate', isLessThanOrEqualTo: end)
+        .snapshots()
+        .map((snapshot) {
+      final list = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return TaskModel.fromJson(data);
+      }).toList();
+
+      list.sort((a, b) {
+        final ad = a.dueDate;
+        final bd = b.dueDate;
+        if (ad == null && bd == null) return 0;
+        if (ad == null) return 1;
+        if (bd == null) return -1;
+        return bd.compareTo(ad);
+      });
+
+      return list;
+    });
+  }
+
   Future<List<TaskModel>> getTasksForUser(String userId) async {
     final snapshot = await _firestore
         .collection('tasks')
@@ -163,6 +246,10 @@ class FirestoreService {
       return TaskModel.fromJson(data);
     }
     return null;
+  }
+
+  DateTime? parseDateTimePublic(dynamic value) {
+    return _parseDateTime(value);
   }
 
   Future<List<TaskModel>> getTasksBySOP(String sopId) async {
@@ -323,6 +410,7 @@ class FirestoreService {
   Future<Map<String, dynamic>> getManagerDashboard(String userId) async {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
+    final todayDateStr = DateFormat('yyyy-MM-dd').format(todayStart);
 
     // Get all tasks assigned by this user (admin/manager)
     final tasksSnapshot = await _firestore
@@ -365,7 +453,6 @@ class FirestoreService {
         .get();
 
     final totalStaff = staffSnapshot.docs.length;
-    final todayDateStr = DateFormat('yyyy-MM-dd').format(todayStart);
     final todayAttendanceSnapshot = await _firestore
         .collection('attendance')
         .where('dateStr', isEqualTo: todayDateStr)
@@ -465,6 +552,11 @@ class FirestoreService {
       return due.isBefore(tomorrowStart);
     }).toList();
 
+    final tasksAssignedToday = tasks.where((task) {
+      final c = task.createdAt;
+      return !c.isBefore(todayStart) && c.isBefore(tomorrowStart);
+    }).toList();
+
     final totalDueToday = tasksDueUpToToday.length;
     final approvedDueToday = tasksDueUpToToday
         .where((task) =>
@@ -513,32 +605,38 @@ class FirestoreService {
     final mostFailedTask = mostFailedEntry?.key ?? 'None';
     final mostFailedTaskCount = mostFailedEntry?.value ?? 0;
 
-    final completedToday = tasks.where((task) {
-      if (task.completedAt == null) return false;
-      final c = task.completedAt!;
-      final isCompletedStatus = task.status == TaskStatus.completed ||
-          task.status == TaskStatus.approved;
-      return isCompletedStatus &&
-          !c.isBefore(todayStart) &&
-          c.isBefore(tomorrowStart);
-    }).length;
+    final completedToday = tasksAssignedToday
+        .where((task) =>
+            task.status == TaskStatus.completed ||
+            task.status == TaskStatus.approved)
+        .length;
 
-    final pendingTasks = tasksDueUpToToday
+    final pendingTasks = tasksAssignedToday
         .where((task) =>
             task.status == TaskStatus.pending ||
             task.status == TaskStatus.inProgress)
         .length;
 
-    final verificationPending = tasksDueUpToToday
+    final verificationPending = tasksAssignedToday
         .where((task) => task.status == TaskStatus.verificationPending)
         .length;
 
-    final attendanceSnapshot = await _firestore
+    final todayDateStr = DateFormat('yyyy-MM-dd').format(todayStart);
+
+    // Avoid composite index requirement by querying by dateStr only and
+    // filtering pending statuses client-side.
+    final attendanceTodaySnapshot = await _firestore
         .collection('attendance')
-        .where('status', isEqualTo: 'pending')
+        .where('dateStr', isEqualTo: todayDateStr)
         .get();
 
-    final attendancePendingApprovals = attendanceSnapshot.docs.length;
+    final attendancePendingApprovals = attendanceTodaySnapshot.docs.where((d) {
+      final data = d.data();
+      final s = (data['verification_status'] ?? data['status'] ?? '')
+          .toString()
+          .toLowerCase();
+      return s == 'pending';
+    }).length;
 
     final roleVariants = <String>['staff', 'STAFF', 'Staff'];
     final staffSnapshot = await _firestore
@@ -547,7 +645,6 @@ class FirestoreService {
         .get();
 
     final totalStaff = staffSnapshot.docs.length;
-    final todayDateStr = DateFormat('yyyy-MM-dd').format(todayStart);
     final todayAttendanceSnapshot = await _firestore
         .collection('attendance')
         .where('dateStr', isEqualTo: todayDateStr)
@@ -877,6 +974,87 @@ class FirestoreService {
     });
   }
 
+  Stream<List<Map<String, dynamic>>> streamAttendanceForUserDateRange(
+    String userId,
+    String startDateStr,
+    String endDateStr,
+  ) {
+    final uid = userId.trim();
+    final start = startDateStr.trim();
+    final end = endDateStr.trim();
+    if (uid.isEmpty || start.isEmpty || end.isEmpty) return Stream.value([]);
+
+    return _firestore
+        .collection('attendance')
+        .where('userId', isEqualTo: uid)
+        .snapshots()
+        .map((snapshot) {
+      final items = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).where((a) {
+        final ds = (a['dateStr'] ?? '').toString();
+        if (ds.isEmpty) return false;
+        return ds.compareTo(start) >= 0 && ds.compareTo(end) <= 0;
+      }).toList();
+
+      items.sort((a, b) {
+        final ad = (a['dateStr'] ?? '').toString();
+        final bd = (b['dateStr'] ?? '').toString();
+        final byDate = bd.compareTo(ad);
+        if (byDate != 0) return byDate;
+
+        final aTs = _parseDateTime(a['timestamp'] ?? a['capturedAt']);
+        final bTs = _parseDateTime(b['timestamp'] ?? b['capturedAt']);
+        if (aTs == null && bTs == null) return 0;
+        if (aTs == null) return 1;
+        if (bTs == null) return -1;
+        return bTs.compareTo(aTs);
+      });
+
+      return items;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> streamAttendanceForDateRange(
+    String startDateStr,
+    String endDateStr,
+  ) {
+    final start = startDateStr.trim();
+    final end = endDateStr.trim();
+    if (start.isEmpty || end.isEmpty) return Stream.value([]);
+
+    return _firestore
+        .collection('attendance')
+        .where('dateStr', isGreaterThanOrEqualTo: start)
+        .where('dateStr', isLessThanOrEqualTo: end)
+        .snapshots()
+        .map((snapshot) {
+      final items = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+
+      items.sort((a, b) {
+        final ad = (a['dateStr'] ?? '').toString();
+        final bd = (b['dateStr'] ?? '').toString();
+        final byDate = bd.compareTo(ad);
+        if (byDate != 0) return byDate;
+
+        final aTs = _parseDateTime(a['timestamp'] ?? a['capturedAt']);
+        final bTs = _parseDateTime(b['timestamp'] ?? b['capturedAt']);
+        if (aTs == null && bTs == null) return 0;
+        if (aTs == null) return 1;
+        if (bTs == null) return -1;
+        return bTs.compareTo(aTs);
+      });
+
+      return items;
+    });
+  }
+
   Stream<List<Map<String, dynamic>>> streamAttendanceForDate(String dateStr) {
     final d = dateStr.trim();
     if (d.isEmpty) return Stream.value([]);
@@ -998,12 +1176,38 @@ class FirestoreService {
 
   // Staff Roles operations
   Future<List<String>> getStaffRoles() async {
-    final snapshot = await _firestore.collection('staff_roles').get();
-    return snapshot.docs
-        .map((doc) => doc.data()['name']?.toString().trim())
-        .whereType<String>()
-        .where((s) => s.isNotEmpty)
-        .toList();
+    List<String> roles = <String>[];
+
+    try {
+      final snapshot = await _firestore.collection('staff_roles').get();
+      roles = snapshot.docs
+          .map((doc) => doc.data()['name']?.toString().trim())
+          .whereType<String>()
+          .where((s) => s.isNotEmpty)
+          .toList();
+    } catch (_) {
+      // Ignore and fall back to deriving roles from staff docs.
+    }
+
+    if (roles.isNotEmpty) return roles;
+
+    // Fallback: derive from `staff` collection (PIN login staff profiles)
+    // Uses staffRole/staff_role fields.
+    try {
+      final staffSnap = await _firestore.collection('staff').get();
+      final set = <String>{};
+      for (final doc in staffSnap.docs) {
+        final data = doc.data();
+        final raw = (data['staffRole'] ?? data['staff_role'] ?? '').toString();
+        final v = raw.trim();
+        if (v.isNotEmpty) set.add(v);
+      }
+      final list = set.toList();
+      list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      return list;
+    } catch (_) {
+      return <String>[];
+    }
   }
 
   Future<void> addStaffRole(String name, {String? createdBy}) async {

@@ -301,7 +301,27 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
               return Center(child: Text('Error: ${snapshot.error}'));
             }
 
-            final tasks = snapshot.data ?? [];
+            final tasksRaw = snapshot.data ?? [];
+
+            final Map<String, TaskEntity> uniqueById = {};
+            for (final t in tasksRaw) {
+              final id = t.id.trim();
+              if (id.isEmpty) continue;
+              final existing = uniqueById[id];
+              if (existing == null) {
+                uniqueById[id] = t;
+                continue;
+              }
+              final existingTitleEmpty = existing.title.trim().isEmpty;
+              final newTitleEmpty = t.title.trim().isEmpty;
+              if (existingTitleEmpty && !newTitleEmpty) {
+                uniqueById[id] = t;
+              }
+            }
+
+            final tasks = uniqueById.values
+                .where((t) => t.title.trim().isNotEmpty)
+                .toList();
 
             // Calculate Potential Earnings
             final potentialEarnings = _calculatePotentialEarnings(tasks);
@@ -871,10 +891,10 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                                   title: task.title,
                                   time: (task.plannedStartAt != null &&
                                           task.plannedEndAt != null)
-                                      ? "${DateFormat('MMM d, h:mm a').format(task.plannedStartAt!)} - ${DateFormat('h:mm a').format(task.plannedEndAt!)}"
+                                      ? "${DateFormat('MMM d, h:mm a').format(task.plannedStartAt!.toLocal())} - ${DateFormat('h:mm a').format(task.plannedEndAt!.toLocal())}"
                                       : (task.dueDate != null
                                           ? DateFormat('MMM d, h:mm a')
-                                              .format(task.dueDate!)
+                                              .format(task.dueDate!.toLocal())
                                           : 'No deadline'),
                                   person: statusLabel,
                                   statusColor: statusColor,

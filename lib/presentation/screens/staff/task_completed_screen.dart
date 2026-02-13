@@ -15,6 +15,8 @@ class TaskCompletedScreen extends StatefulWidget {
 
 class _TaskCompletedScreenState extends State<TaskCompletedScreen> {
   TaskFrequency? _selectedFrequency;
+  String? _loadedForUserId;
+  DateTime? _lastReloadedAt;
 
   @override
   void initState() {
@@ -24,8 +26,36 @@ class _TaskCompletedScreenState extends State<TaskCompletedScreen> {
       final completedProvider =
           Provider.of<CompletedTaskProvider>(context, listen: false);
       if (auth.currentUser != null) {
+        _loadedForUserId = auth.currentUser!.id;
         completedProvider.loadCompletedTasks(userId: auth.currentUser!.id);
       }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route == null || route.isCurrent != true) return;
+
+    final auth = Provider.of<AuthenticationProvider>(context, listen: false);
+    final userId = auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) return;
+
+    final now = DateTime.now();
+    final last = _lastReloadedAt;
+    final shouldReload = _loadedForUserId != userId ||
+        last == null ||
+        now.difference(last).inSeconds >= 2;
+    if (!shouldReload) return;
+
+    _loadedForUserId = userId;
+    _lastReloadedAt = now;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Provider.of<CompletedTaskProvider>(context, listen: false)
+          .loadCompletedTasks(userId: userId);
     });
   }
 

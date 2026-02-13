@@ -30,6 +30,10 @@ class _AttendanceVerificationScreenState
     final auth = Provider.of<AuthenticationProvider>(context);
     final firestoreService = FirestoreService();
 
+    final role = (auth.currentUser?.role ?? '').toString().toLowerCase();
+    final isPrivileged =
+        role == 'admin' || role == 'owner' || role == 'manager';
+
     return Scaffold(
       backgroundColor: AppTheme.backGroundColor,
       appBar: AppBar(
@@ -121,11 +125,27 @@ class _AttendanceVerificationScreenState
             // Content
             Expanded(
               child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: auth.currentUser != null
+                stream: auth.currentUser != null && isPrivileged
                     ? firestoreService
                         .getPendingAttendances(auth.currentUser!.id)
                     : Stream.value([]),
                 builder: (context, snapshot) {
+                  if (!isPrivileged) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Text(
+                          'You do not have permission to verify attendances.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
                       child: Padding(

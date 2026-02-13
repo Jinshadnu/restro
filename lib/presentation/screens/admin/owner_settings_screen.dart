@@ -196,6 +196,18 @@ class _OwnerSettingsScreenState extends State<OwnerSettingsScreen> {
                         context, AppRoutes.attendanceOverview),
                   ),
                   _tile(
+                    icon: Icons.calendar_view_month_outlined,
+                    title: 'Monthly Attendance Summary',
+                    onTap: () => Navigator.pushNamed(
+                        context, AppRoutes.monthlyAttendanceSummary),
+                  ),
+                  _tile(
+                    icon: Icons.calendar_view_month_outlined,
+                    title: 'Monthly Task Overview',
+                    onTap: () => Navigator.pushNamed(
+                        context, AppRoutes.monthlyTaskOverview),
+                  ),
+                  _tile(
                     icon: Icons.help_outline,
                     title: 'Help & Support',
                     onTap: () =>

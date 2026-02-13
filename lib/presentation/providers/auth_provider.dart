@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:restro/data/models/user_model.dart';
 import 'package:restro/data/repositories/auth_repository.dart';
 import 'package:restro/data/datasources/remote/firestore_service.dart';
@@ -40,9 +41,39 @@ class AuthenticationProvider extends ChangeNotifier {
 
     if (data == null) return false;
 
-    currentUser = AppUserModel.fromMap(jsonDecode(data));
-    notifyListeners();
-    return true;
+    try {
+      final decoded = jsonDecode(data);
+      if (decoded is! Map<String, dynamic>) {
+        await clearSession();
+        currentUser = null;
+        notifyListeners();
+        return false;
+      }
+
+      currentUser = AppUserModel.fromMap(decoded);
+
+      // Staff flows rely on anonymous FirebaseAuth for Firestore access.
+      // After restoring from prefs (app restart), ensure FirebaseAuth has a user.
+      final role = (currentUser?.role ?? '').toString().toLowerCase();
+      if (role == 'staff') {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          try {
+            await FirebaseAuth.instance.signInAnonymously();
+          } catch (_) {
+            // If anonymous auth fails, keep the session but app may redirect on permission errors.
+          }
+        }
+      }
+
+      notifyListeners();
+      return currentUser != null;
+    } catch (_) {
+      await clearSession();
+      currentUser = null;
+      notifyListeners();
+      return false;
+    }
   }
 
   // ----------------------------------------------------------
@@ -93,6 +124,16 @@ class AuthenticationProvider extends ChangeNotifier {
       await saveUserSession(currentUser!);
       await NotificationService().registerFcmTokenForUser(currentUser!.id);
 
+      final r = role.toString().toLowerCase();
+      if (r == 'staff') {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          try {
+            await FirebaseAuth.instance.signInAnonymously();
+          } catch (_) {}
+        }
+      }
+
       setLoading(false);
       notifyListeners();
       return null;
@@ -131,6 +172,16 @@ class AuthenticationProvider extends ChangeNotifier {
       await saveUserSession(currentUser!);
       await NotificationService().registerFcmTokenForUser(currentUser!.id);
 
+      final r = (currentUser?.role ?? '').toString().toLowerCase();
+      if (r == 'staff') {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          try {
+            await FirebaseAuth.instance.signInAnonymously();
+          } catch (_) {}
+        }
+      }
+
       setLoading(false);
       notifyListeners();
       return null;
@@ -161,6 +212,16 @@ class AuthenticationProvider extends ChangeNotifier {
 
       await saveUserSession(currentUser!);
       await NotificationService().registerFcmTokenForUser(currentUser!.id);
+
+      final r = (currentUser?.role ?? '').toString().toLowerCase();
+      if (r == 'staff') {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          try {
+            await FirebaseAuth.instance.signInAnonymously();
+          } catch (_) {}
+        }
+      }
 
       setLoading(false);
       notifyListeners();

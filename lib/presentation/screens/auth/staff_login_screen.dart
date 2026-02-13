@@ -180,6 +180,51 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
     );
   }
 
+  Widget _keypadButton(String value) {
+    return InkWell(
+      onTap: () => _onKeyPress(value),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F8FA),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.black.withOpacity(0.06)),
+        ),
+        child: Center(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _keypadBackspaceButton() {
+    return InkWell(
+      onTap: _onBackspace,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F8FA),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.black.withOpacity(0.06)),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.backspace_outlined,
+            size: 24,
+            color: Colors.black.withOpacity(0.6),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ===========================================================
   //            Enhanced Backspace Widget
   // ===========================================================
@@ -283,240 +328,140 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
     final authProvider = Provider.of<AuthenticationProvider>(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.backGroundColor,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        title: const Text(
-          'Staff Login',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-        ),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      backgroundColor: AppTheme.primaryColor,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            // Premium header card
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryColor,
-                    AppTheme.primaryColor.withOpacity(0.85),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.18),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.lock_person,
-                          color: Colors.white,
-                          size: 28,
-                        ),
+            // Top Section (Primary Color)
+            Expanded(
+              flex: 3,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Secure Access',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Enter your 4-digit staff PIN to continue',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
                             ),
                           ],
                         ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/logo.jpg',
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Staff Access',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please enter your PIN code',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.8),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
 
-            // PIN entry section
+            // Bottom Section (White Sheet)
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+              flex: 5,
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9), // Slate 100
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
+                  ),
+                ),
                 child: Column(
                   children: [
-                    const SizedBox(height: 14),
-
-                    // PIN dots container
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border:
-                            Border.all(color: Colors.black.withOpacity(0.04)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Enter PIN',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Enhanced PIN dots
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(4, (index) {
-                              return _enhancedPinDot(index < _pin.length);
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Loading indicator or keypad
-                    if (authProvider.isLoading)
-                      Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border:
-                              Border.all(color: Colors.black.withOpacity(0.04)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: const CircularProgressIndicator(
-                          color: AppTheme.primaryColor,
-                        ),
-                      )
-                    else
-                      // Enhanced keypad
-                      Expanded(
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
+                    const SizedBox(height: 48),
+                    // PIN Display
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(4, (index) {
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                          width: 20,
+                          height: 20,
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: Colors.black.withOpacity(0.04)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
+                            shape: BoxShape.circle,
+                            color: index < _pin.length
+                                ? AppTheme.primaryColor
+                                : Colors.grey.withOpacity(0.2),
                           ),
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    _enhancedKey("1"),
-                                    const SizedBox(width: 12),
-                                    _enhancedKey("2"),
-                                    const SizedBox(width: 12),
-                                    _enhancedKey("3"),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    _enhancedKey("4"),
-                                    const SizedBox(width: 12),
-                                    _enhancedKey("5"),
-                                    const SizedBox(width: 12),
-                                    _enhancedKey("6"),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    _enhancedKey("7"),
-                                    const SizedBox(width: 12),
-                                    _enhancedKey("8"),
-                                    const SizedBox(width: 12),
-                                    _enhancedKey("9"),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    const Expanded(
-                                        child:
-                                            SizedBox()), // Empty for alignment
-                                    const SizedBox(width: 12),
-                                    _enhancedKey("0"),
-                                    const SizedBox(width: 12),
-                                    _enhancedBackspace(),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                        );
+                      }),
+                    ),
+                    
+                    const Spacer(),
 
-                    const SizedBox(height: 20),
+                    // Keypad
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: authProvider.isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: AppTheme.primaryColor,
+                              ),
+                            )
+                          : GridView.count(
+                              crossAxisCount: 3,
+                              mainAxisSpacing: 16,
+                              crossAxisSpacing: 16,
+                              childAspectRatio: 1.4,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              children: [
+                                _simpleKey('1'),
+                                _simpleKey('2'),
+                                _simpleKey('3'),
+                                _simpleKey('4'),
+                                _simpleKey('5'),
+                                _simpleKey('6'),
+                                _simpleKey('7'),
+                                _simpleKey('8'),
+                                _simpleKey('9'),
+                                const SizedBox(), // Empty slot
+                                _simpleKey('0'),
+                                _simpleBackspace(),
+                              ],
+                            ),
+                    ),
+                    const SizedBox(height: 48),
                   ],
                 ),
               ),
@@ -526,4 +471,75 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
       ),
     );
   }
+
+  Widget _simpleKey(String value) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            offset: const Offset(0, 4),
+            blurRadius: 12,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: () => _onKeyPress(value),
+          borderRadius: BorderRadius.circular(24),
+          splashColor: Colors.black.withOpacity(0.04),
+          highlightColor: Colors.black.withOpacity(0.02),
+          child: Center(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _simpleBackspace() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.04), // Subtle red shadow
+            offset: const Offset(0, 4),
+            blurRadius: 12,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: _onBackspace,
+          borderRadius: BorderRadius.circular(24),
+          splashColor: Colors.red.withOpacity(0.1),
+          child: Center(
+            child: Icon(
+              Icons.backspace_rounded,
+              size: 26,
+              color: const Color(0xFFEF4444).withOpacity(0.8),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
+

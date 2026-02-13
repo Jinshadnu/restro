@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -130,6 +131,7 @@ class _AttendanceSelfieScreenState extends State<AttendanceSelfieScreen> {
       }
 
       final data = Map<String, dynamic>.from(local);
+      data['firebaseUid'] = FirebaseAuth.instance.currentUser?.uid;
       if (imageUrl != null && imageUrl.isNotEmpty) {
         data['imageUrl'] = imageUrl;
       }
@@ -222,6 +224,13 @@ class _AttendanceSelfieScreenState extends State<AttendanceSelfieScreen> {
     try {
       final userId = auth.currentUser!.id;
       final now = DateTime.now();
+
+      if (FirebaseAuth.instance.currentUser == null) {
+        try {
+          await FirebaseAuth.instance.signInAnonymously();
+        } catch (_) {}
+      }
+
       final bypass = await LocationService.isTestingGeofenceBypassEnabled();
       if (!bypass && now.hour < 14) {
         throw Exception(
@@ -290,6 +299,7 @@ class _AttendanceSelfieScreenState extends State<AttendanceSelfieScreen> {
       data['verification_status'] = 'pending';
       data['dateStr'] = dateStr;
       data['capturedAt'] = now.toIso8601String();
+      data['firebaseUid'] = FirebaseAuth.instance.currentUser?.uid;
 
       final pos = await LocationService.getCurrentPosition();
       if (pos != null) {

@@ -12,6 +12,7 @@ import 'package:restro/presentation/providers/auth_provider.dart';
 import 'package:restro/presentation/providers/task_provider.dart';
 import 'package:restro/services/critical_compliance_service.dart';
 import 'package:restro/utils/theme/theme.dart';
+import 'package:restro/utils/app_logger.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 
 class StartTaskScreen extends StatefulWidget {
@@ -41,6 +42,7 @@ class _StartTaskScreenState extends State<StartTaskScreen> {
   String? completionDateTime; // assigned on submit
 
   bool _requiresPhoto = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -471,8 +473,15 @@ class _StartTaskScreenState extends State<StartTaskScreen> {
           width: double.infinity,
           height: 55,
           child: ElevatedButton(
-            onPressed: canSubmit
+            onPressed: (!_isSubmitting && canSubmit)
                 ? () async {
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    if (_isSubmitting) return;
+                    setState(() {
+                      _isSubmitting = true;
+                    });
+
                     /// Set COMPLETION TIME (local display)
                     setState(() {
                       completionDateTime = DateFormat("dd MMM yyyy • hh:mm a")
@@ -525,15 +534,26 @@ class _StartTaskScreenState extends State<StartTaskScreen> {
 
                       // Show success dialog and redirect to staff home
                       await _showTaskSuccessDialog();
-                    } catch (e) {
-                      debugPrint('Error completing task: $e');
+                    } catch (e, st) {
+                      AppLogger.e(
+                        'StartTaskScreen',
+                        e,
+                        st,
+                        message: 'completeTask failed taskId=${widget.task.id}',
+                      );
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         SnackBar(
                           content: Text('Failed to submit task: $e'),
                           backgroundColor: Colors.red,
                         ),
                       );
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          _isSubmitting = false;
+                        });
+                      }
                     }
                   }
                 : () {
@@ -546,13 +566,22 @@ class _StartTaskScreenState extends State<StartTaskScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: const Text(
-              "Submit Task",
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600),
-            ),
+            child: _isSubmitting
+                ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text(
+                    "Submit Task",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600),
+                  ),
           ),
         ),
       ),

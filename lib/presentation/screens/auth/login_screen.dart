@@ -157,7 +157,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                AppRoutes.forgotPassword,
+                              );
+                            },
                             child: const Text(
                               "Forgot Password?",
                               style: TextStyle(color: Color(0xFFD62128)),
@@ -175,6 +180,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: authProvider.isLoading
                               ? null
                               : () async {
+                                  final messenger =
+                                      ScaffoldMessenger.of(context);
+                                  final navigator = Navigator.of(context);
+
                                   if (!_formKey.currentState!.validate()) {
                                     return;
                                   }
@@ -184,8 +193,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     password: passwordCtrl.text.trim(),
                                   );
 
+                                  if (!mounted) return;
+
                                   if (error != null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    messenger.showSnackBar(
                                       SnackBar(content: Text(error)),
                                     );
                                     return;
@@ -194,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   final user = authProvider.currentUser;
 
                                   if (user == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    messenger.showSnackBar(
                                       const SnackBar(
                                         content: Text("User data not found"),
                                       ),
@@ -208,14 +219,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   // ROLE-BASED NAVIGATION
                                   // -------------------------
                                   if (role == "admin") {
-                                    Navigator.pushReplacementNamed(
-                                        context, AppRoutes.adminDashboard);
+                                    navigator.pushReplacementNamed(
+                                        AppRoutes.adminDashboard);
                                   } else if (role == "owner") {
-                                    Navigator.pushReplacementNamed(
-                                        context, AppRoutes.ownerDashboard);
+                                    navigator.pushReplacementNamed(
+                                        AppRoutes.ownerDashboard);
                                   } else if (role == "manager") {
-                                    Navigator.pushReplacementNamed(
-                                        context, AppRoutes.managerDashboard);
+                                    navigator.pushReplacementNamed(
+                                        AppRoutes.managerDashboard);
                                   } else if (role == "staff") {
                                     bool selfieRequired = true;
                                     try {
@@ -226,16 +237,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                       selfieRequired = true;
                                     }
 
+                                    if (!mounted) return;
+
                                     if (!selfieRequired) {
-                                      Navigator.pushReplacementNamed(
-                                          context, AppRoutes.staffDashboard);
+                                      navigator.pushReplacementNamed(
+                                          AppRoutes.staffDashboard);
                                       return;
                                     }
 
                                     final now = DateTime.now();
                                     if (now.hour < 14) {
-                                      Navigator.pushReplacementNamed(
-                                          context, AppRoutes.staffDashboard);
+                                      navigator.pushReplacementNamed(
+                                          AppRoutes.staffDashboard);
                                       return;
                                     }
 
@@ -244,9 +257,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                         await firestoreService
                                             .getTodayAttendance(user.id);
 
+                                    if (!mounted) return;
+
                                     if (todayAttendance.docs.isEmpty) {
-                                      Navigator.pushReplacementNamed(
-                                          context, AppRoutes.attendanceSelfie);
+                                      navigator.pushReplacementNamed(
+                                          AppRoutes.attendanceSelfie);
                                       return;
                                     }
 
@@ -261,14 +276,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     final isApproved = status == 'approved' ||
                                         status == 'verified';
 
-                                    Navigator.pushReplacementNamed(
-                                      context,
+                                    if (!mounted) return;
+                                    navigator.pushReplacementNamed(
                                       isApproved
                                           ? AppRoutes.staffDashboard
                                           : AppRoutes.attendanceSelfie,
                                     );
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    messenger.showSnackBar(
                                       SnackBar(
                                         content: Text("Unknown role: $role"),
                                       ),

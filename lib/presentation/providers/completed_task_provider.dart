@@ -25,32 +25,10 @@ class CompletedTaskProvider extends ChangeNotifier {
       final firestore = FirebaseFirestore.instance;
       Query query = firestore.collection('tasks');
 
-      String? documentId;
-      List<String> assignedToValues = [];
-
       if (userId != null) {
-        // Resolve both userId and documentId like FirestoreService.getTasksStream
-        final userSnapshot = await firestore
-            .collection('users')
-            .where('id', isEqualTo: userId)
-            .limit(1)
-            .get();
-
-        if (userSnapshot.docs.isNotEmpty) {
-          documentId = userSnapshot.docs.first.id;
-        }
-
-        assignedToValues = [userId];
-        if (documentId != null && documentId != userId) {
-          assignedToValues.add(documentId);
-        }
-
-        // Filter by assignedTo (using whereIn only once in this query)
-        if (assignedToValues.length > 1) {
-          query = query.where('assignedTo', whereIn: assignedToValues);
-        } else {
-          query = query.where('assignedTo', isEqualTo: userId);
-        }
+        // Keep query scoped to the logged-in staff user's id.
+        // This avoids permission-denied issues from whereIn / mixed identifiers.
+        query = query.where('assignedTo', isEqualTo: userId);
       }
 
       final tasksSnapshot = await query.get();
@@ -64,8 +42,22 @@ class CompletedTaskProvider extends ChangeNotifier {
       // Filter by completed/approved status in memory
       final filteredTasks = tasks.where((task) {
         return task.status == TaskStatus.completed ||
-            task.status == TaskStatus.approved;
+            task.status == TaskStatus.approved ||
+            task.status == TaskStatus.verificationPending;
       }).toList();
+
+      DateTime? _doneAt(TaskModel t) {
+        return t.completedAt ?? t.verifiedAt;
+      }
+
+      filteredTasks.sort((a, b) {
+        final ad = _doneAt(a);
+        final bd = _doneAt(b);
+        if (ad == null && bd == null) return 0;
+        if (ad == null) return 1;
+        if (bd == null) return -1;
+        return bd.compareTo(ad);
+      });
 
       // Get user names for completedBy
       final userIds = filteredTasks.map((t) => t.assignedTo).toSet().toList();
@@ -81,14 +73,14 @@ class CompletedTaskProvider extends ChangeNotifier {
 
       // Convert to CompletedTaskModel
       for (var task in filteredTasks) {
-        if (task.completedAt != null) {
+        final doneAt = _doneAt(task);
+        if (doneAt != null) {
           _completedTasks.add(
             CompletedTaskModel(
               id: task.id,
               title: task.title,
               description: task.description,
-              time:
-                  'Completed at ${DateFormat('h:mm a').format(task.completedAt!)}',
+              time: 'Completed at ${DateFormat('h:mm a').format(doneAt)}',
               completedBy: usersMap[task.assignedTo] ?? 'Unknown',
               statusColor: Colors.green,
               frequency: task.frequency,
@@ -96,9 +88,6 @@ class CompletedTaskProvider extends ChangeNotifier {
           );
         }
       }
-
-      // Sort by completion time (newest first)
-      _completedTasks.sort((a, b) => b.time.compareTo(a.time));
     } catch (e) {
       _errorMessage = e.toString();
     }

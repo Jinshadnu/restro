@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:restro/data/datasources/remote/firestore_service.dart';
 import 'package:restro/presentation/providers/auth_provider.dart';
+import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:restro/utils/theme/theme.dart';
 
 enum _AttendanceFilterStatus { all, present, absent, late }
@@ -81,6 +82,13 @@ class _AttendanceOverviewScreenState extends State<AttendanceOverviewScreen> {
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.monthlyAttendanceSummary);
+            },
+            icon: const Icon(Icons.calendar_view_month_outlined),
+            tooltip: 'Monthly summary',
+          ),
           IconButton(
             onPressed: _pickDate,
             icon: const Icon(Icons.calendar_today_outlined),

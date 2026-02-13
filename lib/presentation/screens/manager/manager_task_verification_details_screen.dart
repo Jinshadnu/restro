@@ -10,6 +10,7 @@ import 'package:restro/presentation/providers/task_provider.dart';
 import 'package:restro/presentation/widgets/image_markup_screen.dart';
 import 'package:restro/presentation/widgets/voice_note_recorder.dart';
 import 'package:restro/utils/theme/theme.dart';
+import 'package:restro/utils/app_logger.dart';
 
 class ManagerTaskVerificationDetailsScreen extends StatefulWidget {
   final String taskId;
@@ -31,7 +32,7 @@ class _ManagerTaskVerificationDetailsScreenState
 
   String _formatDateTime(DateTime? dt) {
     if (dt == null) return 'Not set';
-    return DateFormat('MMM d, y • h:mm a').format(dt);
+    return DateFormat('MMM d, y • h:mm a').format(dt.toLocal());
   }
 
   String _statusLabel(TaskStatus status) {
@@ -114,7 +115,13 @@ class _ManagerTaskVerificationDetailsScreenState
         ),
       );
       await Navigator.of(context).maybePop();
-    } catch (e) {
+    } catch (e, st) {
+      AppLogger.e(
+        'ManagerTaskVerificationDetails',
+        e,
+        st,
+        message: '_approve failed',
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -135,7 +142,7 @@ class _ManagerTaskVerificationDetailsScreenState
     }
 
     // Navigate to image markup screen
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ImageMarkupScreen(
           imageUrl: task.photoUrl!,
@@ -732,7 +739,7 @@ class _ManagerTaskVerificationDetailsScreenState
                             label: 'Planned Time',
                             value: (task.plannedStartAt != null &&
                                     task.plannedEndAt != null)
-                                ? '${DateFormat('h:mm a').format(task.plannedStartAt!)} - ${DateFormat('h:mm a').format(task.plannedEndAt!)}'
+                                ? '${DateFormat('h:mm a').format(task.plannedStartAt!.toLocal())} - ${DateFormat('h:mm a').format(task.plannedEndAt!.toLocal())}'
                                 : 'Not set',
                           ),
                           const SizedBox(height: 12),

@@ -7,7 +7,12 @@ import 'package:restro/presentation/screens/admin/owner_settings_screen.dart';
 import 'package:restro/utils/theme/theme.dart';
 
 class OwnerDashboardShell extends StatefulWidget {
-  const OwnerDashboardShell({super.key});
+  final List<Widget>? screensOverride;
+
+  const OwnerDashboardShell({
+    super.key,
+    this.screensOverride,
+  });
 
   @override
   State<OwnerDashboardShell> createState() => _OwnerDashboardShellState();
@@ -46,13 +51,14 @@ class _OwnerDashboardShellState extends State<OwnerDashboardShell> {
     ),
   ];
 
-  late final List<Widget> _screens = [
-    const OwnerDashboardScreen(),
-    const ManageSopScreen(),
-    OwnerReportsScreen(),
-    const ManageStaffScreen(),
-    const OwnerSettingsScreen(),
-  ];
+  late final List<Widget> _screens = widget.screensOverride ??
+      [
+        const OwnerDashboardScreen(),
+        const ManageSopScreen(),
+        OwnerReportsScreen(),
+        const ManageStaffScreen(),
+        const OwnerSettingsScreen(),
+      ];
 
   @override
   Widget build(BuildContext context) {

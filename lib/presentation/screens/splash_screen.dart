@@ -4,6 +4,11 @@ import 'package:restro/presentation/providers/auth_provider.dart';
 import 'package:restro/data/datasources/remote/firestore_service.dart';
 import 'package:restro/utils/navigation/app_routes.dart';
 import 'package:restro/utils/services/selfie_verification_settings_service.dart';
+import 'package:restro/data/datasources/local/database_helper.dart';
+import 'package:restro/utils/services/auto_assignment_service.dart';
+import 'package:restro/utils/services/sync_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:restro/utils/app_logger.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,6 +21,8 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+
+  static const String _termsAcceptedKey = 'terms_accepted_sop_001_v1';
 
   @override
   void initState() {
@@ -40,29 +47,123 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> navigateUser() async {
     try {
       final auth = Provider.of<AuthenticationProvider>(context, listen: false);
+      final navigator = Navigator.of(context);
 
       await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      final termsAccepted = prefs.getBool(_termsAcceptedKey) ?? false;
+      if (!termsAccepted) {
+        navigator.pushReplacementNamed(AppRoutes.termsAndConditions);
+        return;
+      }
 
       bool loggedIn = await auth.loadSession();
 
       if (!loggedIn) {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
+        navigator.pushReplacementNamed(AppRoutes.login);
         return;
+      }
+
+      final now = DateTime.now();
+      final todayKey =
+          '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final lastAutoAssignDay = prefs.getString('last_auto_assign_day');
+
+      if (lastAutoAssignDay == todayKey) {
+        AppLogger.d(
+          'SplashScreen',
+          'auto-assignment already ran today ($todayKey), skipping',
+        );
       }
 
       // 🔥 Navigate based on Role
       final role = auth.currentUser!.role.toString().toLowerCase();
       switch (role) {
         case "admin":
-          Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
+          if (lastAutoAssignDay != todayKey) {
+            try {
+              final db = DatabaseHelper.instance;
+              final sync = SyncService(db, FirestoreService());
+              await sync.syncFromFirestore();
+              final autoAssign = AutoAssignmentService(db, FirestoreService());
+              final created = await autoAssign.autoAssignTasks();
+              AppLogger.d(
+                'SplashScreen',
+                'auto-assignment created=$created (admin)',
+              );
+              if (created > 0) {
+                await prefs.setString('last_auto_assign_day', todayKey);
+              }
+            } catch (e, st) {
+              AppLogger.e(
+                'SplashScreen',
+                e,
+                st,
+                message: 'auto-assignment failed (admin)',
+              );
+            }
+          }
+          if (!mounted) return;
+          navigator.pushReplacementNamed(AppRoutes.adminDashboard);
           break;
 
         case "owner":
-          Navigator.pushReplacementNamed(context, AppRoutes.ownerDashboard);
+          if (lastAutoAssignDay != todayKey) {
+            try {
+              final db = DatabaseHelper.instance;
+              final sync = SyncService(db, FirestoreService());
+              await sync.syncFromFirestore();
+              final autoAssign = AutoAssignmentService(db, FirestoreService());
+              final created = await autoAssign.autoAssignTasks();
+              AppLogger.d(
+                'SplashScreen',
+                'auto-assignment created=$created (owner)',
+              );
+              if (created > 0) {
+                await prefs.setString('last_auto_assign_day', todayKey);
+              }
+            } catch (e, st) {
+              AppLogger.e(
+                'SplashScreen',
+                e,
+                st,
+                message: 'auto-assignment failed (owner)',
+              );
+            }
+          }
+          if (!mounted) return;
+          navigator.pushReplacementNamed(AppRoutes.ownerDashboard);
           break;
 
         case "manager":
-          Navigator.pushReplacementNamed(context, AppRoutes.managerDashboard);
+          if (lastAutoAssignDay != todayKey) {
+            try {
+              final db = DatabaseHelper.instance;
+              final sync = SyncService(db, FirestoreService());
+              await sync.syncFromFirestore();
+              final autoAssign = AutoAssignmentService(db, FirestoreService());
+              final created = await autoAssign.autoAssignTasks();
+              AppLogger.d(
+                'SplashScreen',
+                'auto-assignment created=$created (manager)',
+              );
+              if (created > 0) {
+                await prefs.setString('last_auto_assign_day', todayKey);
+              }
+            } catch (e, st) {
+              AppLogger.e(
+                'SplashScreen',
+                e,
+                st,
+                message: 'auto-assignment failed (manager)',
+              );
+            }
+          }
+          if (!mounted) return;
+          navigator.pushReplacementNamed(AppRoutes.managerDashboard);
           break;
 
         case "staff":
@@ -75,14 +176,16 @@ class _SplashScreenState extends State<SplashScreen>
           }
 
           if (!selfieRequired) {
-            Navigator.pushReplacementNamed(context, AppRoutes.staffDashboard);
+            if (!mounted) return;
+            navigator.pushReplacementNamed(AppRoutes.staffDashboard);
             break;
           }
 
           // Check if attendance is already marked today
           final now = DateTime.now();
           if (now.hour < 14) {
-            Navigator.pushReplacementNamed(context, AppRoutes.staffDashboard);
+            if (!mounted) return;
+            navigator.pushReplacementNamed(AppRoutes.staffDashboard);
             break;
           }
 
@@ -92,7 +195,8 @@ class _SplashScreenState extends State<SplashScreen>
           );
 
           if (todayAttendance.docs.isEmpty) {
-            Navigator.pushReplacementNamed(context, AppRoutes.attendanceSelfie);
+            if (!mounted) return;
+            navigator.pushReplacementNamed(AppRoutes.attendanceSelfie);
             break;
           }
 
@@ -103,18 +207,20 @@ class _SplashScreenState extends State<SplashScreen>
               .toLowerCase();
           final isApproved = status == 'approved' || status == 'verified';
 
-          Navigator.pushReplacementNamed(
-            context,
+          if (!mounted) return;
+          navigator.pushReplacementNamed(
             isApproved ? AppRoutes.staffDashboard : AppRoutes.attendanceSelfie,
           );
           break;
 
         default:
-          Navigator.pushReplacementNamed(context, AppRoutes.login);
+          if (!mounted) return;
+          navigator.pushReplacementNamed(AppRoutes.login);
       }
-    } catch (e) {
-      // If an error occurs, navigate to the login screen
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+    } catch (e, st) {
+      AppLogger.e('SplashScreen', e, st, message: 'navigateUser failed');
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
     }
   }
 

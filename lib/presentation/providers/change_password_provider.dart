@@ -20,14 +20,19 @@ class ChangePasswordProvider extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         _errorMessage = "User not logged in";
-        _isLoading = false;
-        notifyListeners();
+        return false;
+      }
+
+      final email = user.email;
+      if (email == null || email.isEmpty) {
+        _errorMessage =
+            'Email not available for this account. Please log out and log in again.';
         return false;
       }
 
       // Re-authenticate user with current password
       final credential = EmailAuthProvider.credential(
-        email: user.email!,
+        email: email,
         password: currentPwd,
       );
 
@@ -35,12 +40,8 @@ class ChangePasswordProvider extends ChangeNotifier {
 
       // Update password
       await user.updatePassword(newPwd);
-
-      _isLoading = false;
-      notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      _isLoading = false;
       switch (e.code) {
         case 'wrong-password':
           _errorMessage = "Current password is incorrect";
@@ -54,13 +55,13 @@ class ChangePasswordProvider extends ChangeNotifier {
         default:
           _errorMessage = e.message ?? "Failed to update password";
       }
-      notifyListeners();
       return false;
     } catch (e) {
-      _isLoading = false;
       _errorMessage = "An error occurred: ${e.toString()}";
-      notifyListeners();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

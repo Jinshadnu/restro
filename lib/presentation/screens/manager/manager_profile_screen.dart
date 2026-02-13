@@ -227,6 +227,26 @@ class ManagerProfileScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       _buildSettingsTile(
+                        icon: Icons.calendar_view_month_outlined,
+                        title: 'Monthly Attendance Summary',
+                        subtitle: 'View staff attendance totals per month',
+                        onTap: () {
+                          Navigator.pushNamed(
+                              context, AppRoutes.monthlyAttendanceSummary);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _buildSettingsTile(
+                        icon: Icons.calendar_view_month_outlined,
+                        title: 'Monthly Task Overview',
+                        subtitle: 'View monthly task totals per staff',
+                        onTap: () {
+                          Navigator.pushNamed(
+                              context, AppRoutes.monthlyTaskOverview);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _buildSettingsTile(
                         icon: Icons.help_center_outlined,
                         title: 'Help & Support',
                         subtitle: 'Get help and contact support',

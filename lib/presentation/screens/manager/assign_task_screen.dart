@@ -7,6 +7,7 @@ import 'package:restro/domain/entities/task_entity.dart';
 import 'package:restro/presentation/widgets/gradient_button.dart';
 import 'package:restro/presentation/widgets/custome_text_field.dart';
 import 'package:restro/utils/theme/theme.dart';
+import 'package:restro/utils/app_logger.dart';
 import 'package:restro/data/datasources/remote/firestore_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
@@ -47,6 +48,27 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
   bool _isLoadingData = true;
 
   List<Map<String, dynamic>> _staffList = [];
+
+  void _resetForm() {
+    _formKey.currentState?.reset();
+    _titleCtrl.clear();
+    _descCtrl.clear();
+
+    setState(() {
+      _selectedDate = null;
+      _plannedStartAt = null;
+      _plannedEndAt = null;
+      _selectedStaffId = null;
+      _selectedSopId = null;
+      _selectedSopTitle = null;
+      _selectedFrequency = null;
+      _selectedGrade = null;
+      _selectedTargetStaffRole = null;
+      _autoStartTime = null;
+      _autoEndTime = null;
+      _requireEvidence = false;
+    });
+  }
 
   @override
   void initState() {
@@ -892,6 +914,28 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
     return DropdownButtonFormField<TaskGrade>(
       value: _selectedGrade,
       isExpanded: true,
+      selectedItemBuilder: (context) {
+        return [
+          Text(
+            'Grade B',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            'Grade A',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ];
+      },
       decoration: InputDecoration(
         labelText: "Task Priority",
         labelStyle: TextStyle(
@@ -912,7 +956,7 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
           borderSide: BorderSide(color: AppTheme.primaryColor),
         ),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       icon: Icon(
         Icons.keyboard_arrow_down,
@@ -1215,13 +1259,15 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
         final templateId = _uuid.v4();
         final startMinutes = _autoStartTime!.hour * 60 + _autoStartTime!.minute;
         final endMinutes = _autoEndTime!.hour * 60 + _autoEndTime!.minute;
+        final hasTargetRole = _selectedTargetStaffRole != null &&
+            _selectedTargetStaffRole!.trim().isNotEmpty;
         final payload = <String, dynamic>{
           'id': templateId,
           'title': _titleCtrl.text.trim(),
           'description': _descCtrl.text.trim(),
           'sopid': _selectedSopId!,
           'frequency': 'daily',
-          'assignmentMode': 'round_robin',
+          'assignmentMode': hasTargetRole ? 'all' : 'round_robin',
           'windowStartMinutes': startMinutes,
           'windowEndMinutes': endMinutes,
           'grade': _selectedGrade!.toString().split('.').last,
@@ -1230,8 +1276,7 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
           'assignedBy': auth.currentUser!.id,
           'createdAt': DateTime.now().toIso8601String(),
         };
-        if (_selectedTargetStaffRole != null &&
-            _selectedTargetStaffRole!.trim().isNotEmpty) {
+        if (hasTargetRole) {
           payload['targetStaffRole'] = _selectedTargetStaffRole!.trim();
         }
         await _firestoreService.createTaskTemplateFromData(payload);
@@ -1271,10 +1316,13 @@ class _ManagerAssignTaskScreenState extends State<ManagerAssignTaskScreen> {
       // Clear loading before leaving the screen to avoid setState-after-dispose.
       setState(() => _isLoading = false);
 
+      _resetForm();
+
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
-    } catch (e) {
+    } catch (e, st) {
+      AppLogger.e('AssignTaskScreen', e, st, message: '_submitTask failed');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),

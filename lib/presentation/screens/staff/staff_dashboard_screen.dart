@@ -15,7 +15,14 @@ import 'package:restro/services/daily_scoring_engine.dart';
 import 'package:restro/utils/services/selfie_verification_settings_service.dart';
 
 class StaffDashboard extends StatefulWidget {
-  const StaffDashboard({super.key});
+  final List<Widget>? screensOverride;
+  final bool skipAttendanceCheck;
+
+  const StaffDashboard({
+    super.key,
+    this.screensOverride,
+    this.skipAttendanceCheck = false,
+  });
 
   @override
   State<StaffDashboard> createState() => _StaffDashboardState();
@@ -24,8 +31,7 @@ class StaffDashboard extends StatefulWidget {
 class _StaffDashboardState extends State<StaffDashboard> {
   int _currentIndex = 0;
   final NavigationGuard _navigationGuard = NavigationGuard();
-  final SelfieVerificationSettingsService _selfieSettingsService =
-      SelfieVerificationSettingsService();
+  SelfieVerificationSettingsService? _selfieSettingsService;
   bool _isCheckingNavigation = false;
   bool _skipAttendanceCheck = false;
   bool _didInitFromRoute = false;
@@ -66,12 +72,15 @@ class _StaffDashboardState extends State<StaffDashboard> {
         statusBarBrightness: Brightness.dark,
       ),
     );
-    _screens.addAll([
-      const StaffHomeScreen(),
-      const StaffTaskScreen(),
-      const TaskCompletedScreen(),
-      const StaffProfileScreen(),
-    ]);
+    _screens.addAll(
+      widget.screensOverride ??
+          [
+            const StaffHomeScreen(),
+            const StaffTaskScreen(),
+            const TaskCompletedScreen(),
+            const StaffProfileScreen(),
+          ],
+    );
   }
 
   @override
@@ -79,6 +88,10 @@ class _StaffDashboardState extends State<StaffDashboard> {
     super.didChangeDependencies();
     if (_didInitFromRoute) return;
     _didInitFromRoute = true;
+
+    if (widget.skipAttendanceCheck) {
+      _skipAttendanceCheck = true;
+    }
 
     // Safe place to read ModalRoute arguments (after initState).
     final args = ModalRoute.of(context)?.settings.arguments;
@@ -95,9 +108,10 @@ class _StaffDashboardState extends State<StaffDashboard> {
   }
 
   Future<void> _checkAttendance() async {
+    _selfieSettingsService ??= SelfieVerificationSettingsService();
     bool selfieRequired = true;
     try {
-      selfieRequired = await _selfieSettingsService.getEnabled();
+      selfieRequired = await _selfieSettingsService!.getEnabled();
     } catch (_) {
       selfieRequired = true;
     }

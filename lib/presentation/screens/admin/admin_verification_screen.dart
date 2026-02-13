@@ -107,6 +107,7 @@ class AdminVerificationListScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => VerificationDetailsScreen(
+                            taskId: task.id,
                             staff: staffName,
                             task: task.title,
                             sop: sopName,

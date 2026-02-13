@@ -7,6 +7,31 @@ class OwnerReportsScreen extends StatelessWidget {
   OwnerReportsScreen({super.key});
 
   final FirestoreService _firestoreService = FirestoreService();
+  final Future<Map<String, String>> _userIdNameFuture =
+      FirestoreService().getUserIdNameMap();
+
+  bool _looksLikeId(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return false;
+    if (v.contains(' ')) return false;
+    if (v.length < 18) return false;
+    return RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(v);
+  }
+
+  bool _isValidTask(dynamic task) {
+    try {
+      final title = (task.title ?? '').toString().trim();
+      final sopid = (task.sopid ?? '').toString().trim();
+      final assignedTo = (task.assignedTo ?? '').toString().trim();
+
+      if (sopid.isEmpty || assignedTo.isEmpty) return false;
+      if (title.isEmpty) return false;
+      if (_looksLikeId(title)) return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,195 +126,212 @@ class OwnerReportsScreen extends StatelessWidget {
 
             // Content
             Expanded(
-              child: StreamBuilder(
-                stream: _firestoreService.getAllTasks(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-                  final tasks = snapshot.data ?? [];
+              child: FutureBuilder<Map<String, String>>(
+                future: _userIdNameFuture,
+                builder: (context, namesSnapshot) {
+                  final userIdNameMap =
+                      namesSnapshot.data ?? <String, String>{};
 
-                  final total = tasks.length;
-                  final completed = tasks
-                      .where((t) => t.status.toString().contains('approved'))
-                      .length;
-                  final pending = tasks
-                      .where((t) => t.status.toString().contains('pending'))
-                      .length;
-                  final verification = tasks
-                      .where(
-                          (t) => t.status.toString().contains('verification'))
-                      .length;
-                  final rejected = tasks
-                      .where((t) => t.status.toString().contains('rejected'))
-                      .length;
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Enhanced section header
-                        _buildSectionHeader(
-                            'Overall Task Summary', Icons.bar_chart),
-                        const SizedBox(height: 12),
-
-                        // Enhanced stats container
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: Colors.black.withOpacity(0.04)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
+                  return StreamBuilder(
+                    stream: _firestoreService.getAllTasks(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(),
                           ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _enhancedStatTile(
-                                      title: 'Total',
-                                      value: total,
-                                      color: AppTheme.primaryColor,
-                                      icon: Icons.list_alt,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _enhancedStatTile(
-                                      title: 'Completed',
-                                      value: completed,
-                                      color: Colors.green,
-                                      icon: Icons.check_circle,
-                                    ),
+                        );
+                      }
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
+                      final tasks = snapshot.data ?? [];
+                      final filteredTasks = tasks.where(_isValidTask).toList();
+
+                      final total = filteredTasks.length;
+                      final completed = filteredTasks
+                          .where(
+                              (t) => t.status.toString().contains('approved'))
+                          .length;
+                      final pending = filteredTasks
+                          .where((t) => t.status.toString().contains('pending'))
+                          .length;
+                      final verification = filteredTasks
+                          .where((t) =>
+                              t.status.toString().contains('verification'))
+                          .length;
+                      final rejected = filteredTasks
+                          .where(
+                              (t) => t.status.toString().contains('rejected'))
+                          .length;
+
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Enhanced section header
+                            _buildSectionHeader(
+                                'Overall Task Summary', Icons.bar_chart),
+                            const SizedBox(height: 12),
+
+                            // Enhanced stats container
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: Colors.black.withOpacity(0.04)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
-                              Row(
+                              child: Column(
                                 children: [
-                                  Expanded(
-                                    child: _enhancedStatTile(
-                                      title: 'Pending',
-                                      value: pending,
-                                      color: Colors.orange,
-                                      icon: Icons.timelapse,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _enhancedStatTile(
-                                      title: 'Verify',
-                                      value: verification,
-                                      color: Colors.purple,
-                                      icon: Icons.verified_outlined,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _enhancedStatTile(
-                                      title: 'Rejected',
-                                      value: rejected,
-                                      color: Colors.red,
-                                      icon: Icons.cancel,
-                                    ),
-                                  ),
-                                  const Expanded(child: SizedBox()),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // Enhanced section header
-                        _buildSectionHeader(
-                            'Recent Tasks', Icons.recent_actors),
-                        const SizedBox(height: 12),
-
-                        if (tasks.isEmpty)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32.0),
-                              child: Container(
-                                padding: const EdgeInsets.all(24),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color: Colors.black.withOpacity(0.04)),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.04),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.task_alt_outlined,
-                                      size: 64,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No tasks yet',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.grey.shade600,
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _enhancedStatTile(
+                                          title: 'Total',
+                                          value: total,
+                                          color: AppTheme.primaryColor,
+                                          icon: Icons.list_alt,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Tasks will appear here once created',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade500,
-                                        fontWeight: FontWeight.w500,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _enhancedStatTile(
+                                          title: 'Completed',
+                                          value: completed,
+                                          color: Colors.green,
+                                          icon: Icons.check_circle,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _enhancedStatTile(
+                                          title: 'Pending',
+                                          value: pending,
+                                          color: Colors.orange,
+                                          icon: Icons.timelapse,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _enhancedStatTile(
+                                          title: 'Verify',
+                                          value: verification,
+                                          color: Colors.purple,
+                                          icon: Icons.verified_outlined,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _enhancedStatTile(
+                                          title: 'Rejected',
+                                          value: rejected,
+                                          color: Colors.red,
+                                          icon: Icons.cancel,
+                                        ),
+                                      ),
+                                      const Expanded(child: SizedBox()),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                          )
-                        else
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: tasks.length > 10 ? 10 : tasks.length,
-                            itemBuilder: (context, index) {
-                              final task = tasks[index];
-                              return _taskCard(task);
-                            },
-                          ),
-                      ],
-                    ),
+
+                            const SizedBox(height: 28),
+
+                            // Enhanced section header
+                            _buildSectionHeader(
+                                'Recent Tasks', Icons.recent_actors),
+                            const SizedBox(height: 12),
+
+                            if (filteredTasks.isEmpty)
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(32.0),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color:
+                                              Colors.black.withOpacity(0.04)),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.04),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.task_alt_outlined,
+                                          size: 64,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'No tasks yet',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Tasks will appear here once created',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade500,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: filteredTasks.length > 10
+                                    ? 10
+                                    : filteredTasks.length,
+                                itemBuilder: (context, index) {
+                                  final task = filteredTasks[index];
+                                  final staffName =
+                                      userIdNameMap[task.assignedTo] ??
+                                          'Unknown Staff';
+                                  return _taskCard(task, staffName: staffName);
+                                },
+                              ),
+                          ],
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -378,7 +420,7 @@ class OwnerReportsScreen extends StatelessWidget {
   }
 
   // Enhanced task card widget
-  Widget _taskCard(task) {
+  Widget _taskCard(task, {required String staffName}) {
     Color statusColor;
     String statusText;
     IconData statusIcon;
@@ -451,7 +493,7 @@ class OwnerReportsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        task.assignedTo ?? 'Unassigned',
+                        staffName,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,

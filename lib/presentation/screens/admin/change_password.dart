@@ -22,6 +22,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _showConfirm = false;
 
   @override
+  void dispose() {
+    _currentCtrl.dispose();
+    _newCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ChangePasswordProvider>(context);
 
@@ -192,10 +200,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       newPwd: _newCtrl.text.trim(),
     );
 
+    if (!mounted) return;
+
     if (success) {
       _showDialog(context, "Success", "Password updated successfully!", () {
-        Navigator.pop(context); // Close dialog
-        Navigator.pop(context); // Go back to profile
+        if (!mounted) return;
+        final nav = Navigator.of(context);
+        if (nav.canPop()) {
+          nav.pop();
+        }
       });
     } else {
       final errorMsg =
@@ -209,13 +222,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       [VoidCallback? onOk]) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(title),
         content: Text(msg),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.of(dialogContext).pop();
               onOk?.call();
             },
             child: const Text("OK"),

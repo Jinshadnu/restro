@@ -22,12 +22,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController phoneCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
   final TextEditingController confirmPasswordCtrl = TextEditingController();
-  final TextEditingController pinCtrl = TextEditingController();
 
   String? selectedUserType;
 
   // 💡 Match your Firebase roles exactly
-  final List<String> userTypes = ["STAFF", "MANAGER", "OWNER"];
+  final List<String> userTypes = ["MANAGER", "OWNER"];
   // If you want owner => change "admin" to "owner"
 
   @override
@@ -154,33 +153,77 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 8),
 
-                        // USER TYPE DROPDOWN (Improved)
+                        // USER TYPE DROPDOWN
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.primaryColor.withOpacity(0.10),
-                                blurRadius: 18,
-                                offset: const Offset(0, 6),
+                                color: AppTheme.primaryColor.withOpacity(0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 5),
                               ),
                             ],
-                            border: Border.all(color: Colors.grey.shade300),
                           ),
                           child: DropdownButtonFormField<String>(
                             value: selectedUserType,
-                            decoration: const InputDecoration(
+                            isExpanded: true,
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: AppTheme.textSecondary,
+                            ),
+                            decoration: InputDecoration(
                               labelText: "User Type",
-                              border: InputBorder.none,
+                              labelStyle: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 14,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.badge_outlined,
+                                color: AppTheme.primaryColor,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 20,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: AppTheme.primaryColor,
+                                  width: 2,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color:
+                                      AppTheme.textSecondary.withOpacity(0.1),
+                                  width: 1,
+                                ),
+                              ),
                             ),
                             items: userTypes
-                                .map((type) => DropdownMenuItem(
-                                      value: type,
-                                      child: Text(type.toUpperCase()),
-                                    ))
+                                .map(
+                                  (type) => DropdownMenuItem(
+                                    value: type,
+                                    child: Text(
+                                      type == 'MANAGER' ? 'Manager' : 'Owner',
+                                      style: const TextStyle(
+                                        color: AppTheme.textPrimary,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (value) {
                               setState(() => selectedUserType = value);
@@ -189,27 +232,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 value == null ? "Select user type" : null,
                           ),
                         ),
-
-                        // PIN if Staff
-                        if (selectedUserType == "STAFF")
-                          Column(
-                            children: [
-                              CustomeTextField(
-                                controller: pinCtrl,
-                                label: "Staff PIN (4 digits)",
-                                prefixICon: Icons.lock_clock_outlined,
-                                keyboardType: TextInputType.number,
-                                isPassword: true,
-                                validator: (v) {
-                                  if (selectedUserType != "STAFF") return null;
-                                  if (v == null || v.length != 4)
-                                    return "Enter 4-digit PIN";
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                          ),
 
                         // PASSWORD
                         CustomeTextField(
@@ -252,6 +274,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           onPressed: authProvider.isLoading
                               ? null
                               : () async {
+                                  final messenger =
+                                      ScaffoldMessenger.of(context);
+                                  final navigator = Navigator.of(context);
+
                                   if (!_formKey.currentState!.validate()) {
                                     return;
                                   }
@@ -264,23 +290,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     role: selectedUserType!,
                                   );
 
+                                  if (!mounted) return;
+
                                   if (error != null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    messenger.showSnackBar(
                                       SnackBar(content: Text(error)),
                                     );
                                     return;
                                   }
 
                                   // ===== ROLE BASED NAVIGATION =====
-                                  final role = selectedUserType?.toLowerCase();
-
-                                  if (role == "staff") {
-                                    Navigator.pushReplacementNamed(
-                                        context, AppRoutes.staffLogin);
-                                  } else {
-                                    Navigator.pushReplacementNamed(
-                                        context, AppRoutes.login);
-                                  }
+                                  navigator.pushReplacementNamed(
+                                    AppRoutes.login,
+                                  );
                                 },
                         ),
 

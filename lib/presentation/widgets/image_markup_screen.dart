@@ -4,12 +4,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:restro/presentation/widgets/voice_note_recorder.dart';
+import 'package:restro/utils/app_logger.dart';
 import 'package:restro/utils/theme/theme.dart';
 
 class ImageMarkupScreen extends StatefulWidget {
   final String imageUrl;
-  final Function(Uint8List markedImageBytes, String reason, File? voiceNote)
-      onConfirm;
+  final Future<void> Function(
+    Uint8List markedImageBytes,
+    String reason,
+    File? voiceNote,
+  ) onConfirm;
 
   const ImageMarkupScreen({
     super.key,
@@ -28,7 +32,8 @@ enum _MarkupMode {
 
 class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
   final GlobalKey _imageKey = GlobalKey();
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
   List<DrawnLine> lines = [];
   DrawnLine? currentLine;
   bool isDrawing = false;
@@ -185,15 +190,17 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
                             );
                           },
                         ),
-                      
+
                       // The drawing layer (GestureDetector only active in Draw mode)
                       Positioned.fill(
-                       child: IgnorePointer(
-                         ignoring: !isDrawMode, // Pass clicks through if not in draw mode
-                         child: GestureDetector(
+                        child: IgnorePointer(
+                          ignoring:
+                              !isDrawMode, // Pass clicks through if not in draw mode
+                          child: GestureDetector(
                             onPanStart: (details) {
                               if (!isDrawMode) return;
-                              final p = _globalToNormalized(details.globalPosition);
+                              final p =
+                                  _globalToNormalized(details.globalPosition);
                               if (p == null) return;
                               setState(() {
                                 currentLine = DrawnLine(
@@ -206,7 +213,8 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
                             },
                             onPanUpdate: (details) {
                               if (!isDrawing || currentLine == null) return;
-                              final p = _globalToNormalized(details.globalPosition);
+                              final p =
+                                  _globalToNormalized(details.globalPosition);
                               if (p == null) return;
                               setState(() {
                                 currentLine!.points.add(p);
@@ -232,7 +240,7 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
                               size: Size.infinite,
                             ),
                           ),
-                       ),
+                        ),
                       ),
                     ],
                   ),
@@ -292,7 +300,8 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
                   ),
                   const SizedBox(width: 8),
                   _buildToolbarButton(
-                    icon: Icons.cleaning_services_rounded, // Cleaner icon than delete_sweep
+                    icon: Icons
+                        .cleaning_services_rounded, // Cleaner icon than delete_sweep
                     tooltip: 'Clear All',
                     onPressed: lines.isNotEmpty ? _clearAllStrokes : null,
                   ),
@@ -332,7 +341,7 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                   // Mode Toggle (Draw / Zoom)
+                  // Mode Toggle (Draw / Zoom)
                   Center(
                     child: Container(
                       padding: const EdgeInsets.all(4),
@@ -348,13 +357,15 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
                             label: 'Draw',
                             icon: Icons.edit_rounded,
                             isSelected: isDrawMode,
-                            onTap: () => setState(() => _mode = _MarkupMode.draw),
+                            onTap: () =>
+                                setState(() => _mode = _MarkupMode.draw),
                           ),
                           _buildToggleOption(
                             label: 'Zoom',
                             icon: Icons.zoom_in_rounded,
                             isSelected: !isDrawMode,
-                            onTap: () => setState(() => _mode = _MarkupMode.zoom),
+                            onTap: () =>
+                                setState(() => _mode = _MarkupMode.zoom),
                           ),
                         ],
                       ),
@@ -386,43 +397,48 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             'Select a reason...',
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                            style: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 14),
                           ),
                         ),
                         isExpanded: true,
                         icon: Padding(
                           padding: const EdgeInsets.only(right: 16),
-                          child: Icon(Icons.arrow_drop_down_circle_outlined, color: Colors.grey.shade500),
+                          child: Icon(Icons.arrow_drop_down_circle_outlined,
+                              color: Colors.grey.shade500),
                         ),
                         items: rejectionReasons.map((r) {
                           return DropdownMenuItem(
                             value: r,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(r, style: const TextStyle(fontSize: 14)),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child:
+                                  Text(r, style: const TextStyle(fontSize: 14)),
                             ),
                           );
                         }).toList(),
-                        onChanged: (val) => setState(() => selectedReason = val),
+                        onChanged: (val) =>
+                            setState(() => selectedReason = val),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 12),
-                  
+
                   // Voice Note
-                   VoiceNoteRecorder(
-                      onChanged: (file) {
-                        setState(() {
-                          _voiceNote = file;
-                        });
-                      },
-                      onRecordingChanged: (v) {
-                        setState(() {
-                          _isVoiceRecording = v;
-                        });
-                      },
-                    ),
+                  VoiceNoteRecorder(
+                    onChanged: (file) {
+                      setState(() {
+                        _voiceNote = file;
+                      });
+                    },
+                    onRecordingChanged: (v) {
+                      setState(() {
+                        _isVoiceRecording = v;
+                      });
+                    },
+                  ),
 
                   const SizedBox(height: 16),
 
@@ -440,7 +456,8 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                             disabledBackgroundColor: AppTheme.primaryColor.withOpacity(0.5),
+                            disabledBackgroundColor:
+                                AppTheme.primaryColor.withOpacity(0.5),
                           ),
                           child: const Text(
                             'Confirm Rejection',
@@ -476,7 +493,7 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
         padding: const EdgeInsets.all(10),
       ),
       icon: Icon(
-        icon, 
+        icon,
         color: isEnabled ? Colors.white : Colors.white38,
         size: 20,
       ),
@@ -518,7 +535,8 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppTheme.primaryColor : Colors.grey.shade600,
+                color:
+                    isSelected ? AppTheme.primaryColor : Colors.grey.shade600,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
@@ -532,6 +550,9 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
   Future<void> _confirmRejection() async {
     if (selectedReason == null || lines.isEmpty) return;
 
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       if (_mode == _MarkupMode.zoom) {
         setState(() {
@@ -540,20 +561,31 @@ class _ImageMarkupScreenState extends State<ImageMarkupScreen> {
         await Future<void>.delayed(const Duration(milliseconds: 16));
       }
 
+      if (!context.mounted) return;
+
       // Capture the marked image
-      final RenderRepaintBoundary boundary =
-          _imageKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final ctx = _imageKey.currentContext;
+      if (ctx == null) return;
+      final renderObject = ctx.findRenderObject();
+      if (renderObject is! RenderRepaintBoundary) {
+        return;
+      }
+      final RenderRepaintBoundary boundary = renderObject;
       final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
       final ByteData? byteData =
           await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData != null) {
         final Uint8List markedImageBytes = byteData.buffer.asUint8List();
-        widget.onConfirm(markedImageBytes, selectedReason!, _voiceNote);
-        Navigator.pop(context);
+        await widget.onConfirm(markedImageBytes, selectedReason!, _voiceNote);
+        if (!context.mounted) return;
+        navigator.pop();
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+    } catch (e, st) {
+      AppLogger.e('ImageMarkupScreen', e, st,
+          message: '_confirmRejection failed');
+      if (!context.mounted) return;
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Error capturing marked image: $e'),
           backgroundColor: Colors.red,
@@ -694,11 +726,13 @@ class _PreviewMarkupDialogState extends State<_PreviewMarkupDialog> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.85),
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 color: Colors.white.withOpacity(0.1),
                 child: Row(
                   children: [
@@ -710,19 +744,22 @@ class _PreviewMarkupDialogState extends State<_PreviewMarkupDialog> {
                       child: Text(
                         'Preview & Edit',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
                     IconButton(
-                      icon: Icon(isDrawMode ? Icons.zoom_in : Icons.edit, color: Colors.white),
+                      icon: Icon(isDrawMode ? Icons.zoom_in : Icons.edit,
+                          color: Colors.white),
                       onPressed: () {
                         setState(() {
-                          _mode = isDrawMode ? _MarkupMode.zoom : _MarkupMode.draw;
+                          _mode =
+                              isDrawMode ? _MarkupMode.zoom : _MarkupMode.draw;
                         });
                       },
                       tooltip: isDrawMode ? 'Switch to Zoom' : 'Switch to Draw',
                     ),
-                     IconButton(
+                    IconButton(
                       icon: const Icon(Icons.undo, color: Colors.white),
                       onPressed: lines.isNotEmpty ? _undoLastStroke : null,
                     ),
@@ -755,16 +792,21 @@ class _PreviewMarkupDialogState extends State<_PreviewMarkupDialog> {
                               child: GestureDetector(
                                 onPanStart: (details) {
                                   if (!isDrawMode) return;
-                                  final p = _globalToNormalized(details.globalPosition);
+                                  final p = _globalToNormalized(
+                                      details.globalPosition);
                                   if (p == null) return;
                                   setState(() {
-                                    currentLine = DrawnLine(points: [p], color: Colors.red, width: 3.5);
+                                    currentLine = DrawnLine(
+                                        points: [p],
+                                        color: Colors.red,
+                                        width: 3.5);
                                     isDrawing = true;
                                   });
                                 },
                                 onPanUpdate: (details) {
                                   if (!isDrawing || currentLine == null) return;
-                                  final p = _globalToNormalized(details.globalPosition);
+                                  final p = _globalToNormalized(
+                                      details.globalPosition);
                                   if (p == null) return;
                                   setState(() {
                                     currentLine!.points.add(p);
@@ -781,8 +823,12 @@ class _PreviewMarkupDialogState extends State<_PreviewMarkupDialog> {
                                 },
                                 child: CustomPaint(
                                   painter: DrawingPainter(
-                                    lines: [...lines, if (currentLine != null) currentLine!],
-                                    normalizedToLocal: (n, s) => _normalizedToLocal(n, s),
+                                    lines: [
+                                      ...lines,
+                                      if (currentLine != null) currentLine!
+                                    ],
+                                    normalizedToLocal: (n, s) =>
+                                        _normalizedToLocal(n, s),
                                   ),
                                   size: Size.infinite,
                                 ),

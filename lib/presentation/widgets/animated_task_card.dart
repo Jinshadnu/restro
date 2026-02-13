@@ -335,23 +335,23 @@ class _AnimatedTaskCardState extends State<AnimatedTaskCard>
   }
 
   String _formatDateTime(DateTime date) {
-    return DateFormat('MMM d, h:mm a').format(date);
+    return DateFormat('MMM d, h:mm a').format(date.toLocal());
   }
 
   String _formatDateWithTimeRange(DateTime startTime, DateTime endTime) {
-    final datePart = DateFormat('MMM d').format(startTime);
-    final startFormatted = DateFormat('h:mm a').format(startTime);
-    final endFormatted = DateFormat('h:mm a').format(endTime);
+    final datePart = DateFormat('MMM d').format(startTime.toLocal());
+    final startFormatted = DateFormat('h:mm a').format(startTime.toLocal());
+    final endFormatted = DateFormat('h:mm a').format(endTime.toLocal());
     return '$datePart, $startFormatted - $endFormatted';
   }
 
   String _formatTimeRange(DateTime? startTime, DateTime? endTime) {
     if (startTime != null && endTime != null) {
-      final startFormatted = DateFormat('h:mm a').format(startTime);
-      final endFormatted = DateFormat('h:mm a').format(endTime);
+      final startFormatted = DateFormat('h:mm a').format(startTime.toLocal());
+      final endFormatted = DateFormat('h:mm a').format(endTime.toLocal());
       return '$startFormatted - $endFormatted';
     } else if (startTime != null) {
-      return DateFormat('h:mm a').format(startTime);
+      return DateFormat('h:mm a').format(startTime.toLocal());
     }
     return 'No time';
   }

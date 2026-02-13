@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:restro/presentation/providers/task_provider.dart';
 import 'package:restro/utils/theme/theme.dart';
 
-class VerificationDetailsScreen extends StatelessWidget {
+class VerificationDetailsScreen extends StatefulWidget {
+  final String taskId;
   final String staff;
   final String task;
   final String sop;
@@ -15,6 +18,7 @@ class VerificationDetailsScreen extends StatelessWidget {
 
   const VerificationDetailsScreen({
     super.key,
+    required this.taskId,
     required this.staff,
     required this.task,
     required this.sop,
@@ -28,12 +32,84 @@ class VerificationDetailsScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController remarksCtrl = TextEditingController();
+  State<VerificationDetailsScreen> createState() =>
+      _VerificationDetailsScreenState();
+}
 
+class _VerificationDetailsScreenState extends State<VerificationDetailsScreen> {
+  final TextEditingController _remarksCtrl = TextEditingController();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _remarksCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _approve() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await Provider.of<TaskProvider>(context, listen: false)
+          .verifyTask(widget.taskId, true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task approved'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+      await Navigator.of(context).maybePop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _reject(String reason) async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await Provider.of<TaskProvider>(context, listen: false).verifyTask(
+        widget.taskId,
+        false,
+        rejectionReason: reason,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task rejected'),
+          backgroundColor: AppTheme.warning,
+        ),
+      );
+      await Navigator.of(context).maybePop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     /// Check if task was completed on time
-    bool isOnTime = completedTime.isBefore(dueTime) ||
-        completedTime.isAtSameMomentAs(dueTime);
+    final completedLocal = widget.completedTime.toLocal();
+    final dueLocal = widget.dueTime.toLocal();
+    final bool isOnTime = completedLocal.isBefore(dueLocal) ||
+        completedLocal.isAtSameMomentAs(dueLocal);
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -71,23 +147,23 @@ class VerificationDetailsScreen extends StatelessWidget {
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
 
-                  _detailRow("Staff Name", staff),
-                  _detailRow("Task Title", task),
-                  _detailRow("SOP", sop),
-                  _detailRow("Submitted On", date),
+                  _detailRow("Staff Name", widget.staff),
+                  _detailRow("Task Title", widget.task),
+                  _detailRow("SOP", widget.sop),
+                  _detailRow("Submitted On", widget.date),
 
                   /// 💠 NEW FIELD - COMPLETED TIME
                   _detailRow(
                     "Completed Time",
-                    "${completedTime.hour}:${completedTime.minute.toString().padLeft(2, '0')} "
-                        "${completedTime.day}-${completedTime.month}-${completedTime.year}",
+                    "${completedLocal.hour}:${completedLocal.minute.toString().padLeft(2, '0')} "
+                        "${completedLocal.day}-${completedLocal.month}-${completedLocal.year}",
                   ),
 
                   /// 💠 NEW FIELD - DUE TIME
                   _detailRow(
                     "Due Time",
-                    "${dueTime.hour}:${dueTime.minute.toString().padLeft(2, '0')} "
-                        "${dueTime.day}-${dueTime.month}-${dueTime.year}",
+                    "${dueLocal.hour}:${dueLocal.minute.toString().padLeft(2, '0')} "
+                        "${dueLocal.day}-${dueLocal.month}-${dueLocal.year}",
                   ),
 
                   const SizedBox(height: 6),
@@ -137,28 +213,49 @@ class VerificationDetailsScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
 
-            SizedBox(
-              height: 140,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: images.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () => _openImage(context, images[index]),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        images[index],
-                        width: 140,
-                        height: 140,
-                        fit: BoxFit.cover,
+            if (widget.images.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text('No photos submitted.'),
+              )
+            else
+              SizedBox(
+                height: 140,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: widget.images.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final url = widget.images[index];
+                    return GestureDetector(
+                      onTap: () => _openImage(context, url),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          url,
+                          width: 140,
+                          height: 140,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 140,
+                              height: 140,
+                              color: Colors.grey.shade200,
+                              alignment: Alignment.center,
+                              child: const Icon(Icons.broken_image),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
 
             const SizedBox(height: 20),
 
@@ -178,7 +275,7 @@ class VerificationDetailsScreen extends StatelessWidget {
                 ],
               ),
               child: TextFormField(
-                controller: remarksCtrl,
+                controller: _remarksCtrl,
                 maxLines: 3,
                 decoration: const InputDecoration(
                   labelText: "Remarks (optional)",
@@ -193,7 +290,7 @@ class VerificationDetailsScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _showApprovedDialog(context),
+                    onPressed: _isSubmitting ? null : _approve,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -201,14 +298,28 @@ class VerificationDetailsScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text("Approve",
-                        style: TextStyle(fontSize: 16, color: Colors.white)),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            "Approve",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _showRejectReasonPopup(context),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _showRejectReasonPopup(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -242,11 +353,19 @@ class VerificationDetailsScreen extends StatelessWidget {
                   color: Colors.black54,
                   fontSize: 14,
                   fontWeight: FontWeight.w500)),
-          Text(value,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold)),
+                color: Colors.black87,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -261,22 +380,6 @@ class VerificationDetailsScreen extends StatelessWidget {
         child: InteractiveViewer(
           child: Image.network(imageUrl),
         ),
-      ),
-    );
-  }
-
-  void _showApprovedDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Task Approved"),
-        content: const Text("You have approved this task successfully."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
-          )
-        ],
       ),
     );
   }
@@ -316,27 +419,11 @@ class VerificationDetailsScreen extends StatelessWidget {
             onPressed: () {
               if (formKey.currentState!.validate()) {
                 Navigator.pop(context);
-                _showRejectedDialog(context, reasonCtrl.text.trim());
+                _reject(reasonCtrl.text.trim());
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text("Submit", style: TextStyle(color: Colors.white)),
-          )
-        ],
-      ),
-    );
-  }
-
-  void _showRejectedDialog(BuildContext context, String reason) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Task Rejected"),
-        content: Text("Reason: $reason"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
           )
         ],
       ),

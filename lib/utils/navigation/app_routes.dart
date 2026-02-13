@@ -8,6 +8,7 @@ import 'package:restro/presentation/screens/admin/owner_dashboard_shell.dart';
 import 'package:restro/presentation/screens/admin/owner_reports_screen.dart';
 import 'package:restro/presentation/screens/admin/owner_settings_screen.dart';
 import 'package:restro/presentation/screens/auth/login_screen.dart';
+import 'package:restro/presentation/screens/auth/forgot_password_screen.dart';
 import 'package:restro/presentation/screens/auth/staff_login_screen.dart';
 import 'package:restro/presentation/screens/auth/register_screen.dart';
 import 'package:restro/presentation/screens/edit_profile_screen.dart';
@@ -15,17 +16,23 @@ import 'package:restro/presentation/screens/help_support_screen.dart';
 import 'package:restro/presentation/screens/manager/manager_dashboard.dart';
 import 'package:restro/presentation/screens/manager/assign_task_screen.dart';
 import 'package:restro/presentation/screens/splash_screen.dart';
+import 'package:restro/presentation/screens/terms_and_conditions_screen.dart';
 import 'package:restro/presentation/screens/staff/staff_dashboard_screen.dart';
 import 'package:restro/presentation/screens/staff/start_task_screen.dart';
 import 'package:restro/presentation/screens/staff/task_details_screen.dart';
 import 'package:restro/presentation/screens/staff/attendance_selfie_screen.dart';
+import 'package:restro/presentation/screens/staff/staff_my_attendance_screen.dart';
 import 'package:restro/presentation/screens/manager/attendance_verification_screen.dart';
 import 'package:restro/presentation/screens/manager/attendance_overview_screen.dart';
+import 'package:restro/presentation/screens/manager/monthly_attendance_summary_screen.dart';
+import 'package:restro/presentation/screens/manager/monthly_task_overview_screen.dart';
 import 'package:restro/presentation/screens/manager/register_staff_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
+  static const String termsAndConditions = '/terms-and-conditions';
   static const String login = '/login';
+  static const String forgotPassword = '/forgot_password';
   static const String staffLogin = '/staff_login';
   static const String register = '/register';
 
@@ -48,6 +55,9 @@ class AppRoutes {
   static const String attendanceSelfie = '/attendance_selfie';
   static const String attendanceVerification = '/attendance_verification';
   static const String attendanceOverview = '/attendance_overview';
+  static const String staffMyAttendance = '/staff_my_attendance';
+  static const String monthlyAttendanceSummary = '/monthly_attendance_summary';
+  static const String monthlyTaskOverview = '/monthly_task_overview';
   static const String registerStaff = '/register_staff';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -55,8 +65,16 @@ class AppRoutes {
       case splash:
         return MaterialPageRoute(builder: (_) => const SplashScreen());
 
+      case termsAndConditions:
+        return MaterialPageRoute(
+          builder: (_) => const TermsAndConditionsScreen(),
+        );
+
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
+
+      case forgotPassword:
+        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
 
       case staffLogin:
         // Use a deferred or dynamic import if possible, but here we'll just add the import later.
@@ -83,9 +101,6 @@ class AppRoutes {
 
       case changePassword:
         return MaterialPageRoute(builder: (_) => const ChangePasswordScreen());
-
-      case editProfile:
-        return MaterialPageRoute(builder: (_) => const EditProfileScreen());
 
       case editProfile:
         return MaterialPageRoute(builder: (_) => const EditProfileScreen());
@@ -175,6 +190,21 @@ class AppRoutes {
       case attendanceOverview:
         return MaterialPageRoute(
           builder: (_) => const AttendanceOverviewScreen(),
+        );
+
+      case staffMyAttendance:
+        return MaterialPageRoute(
+          builder: (_) => const StaffMyAttendanceScreen(),
+        );
+
+      case monthlyAttendanceSummary:
+        return MaterialPageRoute(
+          builder: (_) => const MonthlyAttendanceSummaryScreen(),
+        );
+
+      case monthlyTaskOverview:
+        return MaterialPageRoute(
+          builder: (_) => const MonthlyTaskOverviewScreen(),
         );
 
       case registerStaff:

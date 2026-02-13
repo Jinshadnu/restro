@@ -45,6 +45,7 @@ class CustomeTextField extends StatelessWidget {
         keyboardType: keyboardType,
         validator: validator,
         maxLines: maxLine ?? 1,
+        textAlignVertical: TextAlignVertical.center,
         style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16),
         decoration: InputDecoration(
             labelText: label,

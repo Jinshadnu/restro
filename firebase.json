@@ -3,6 +3,9 @@
     "source": "functions",
     "runtime": "nodejs20"
   },
+  "firestore": {
+    "rules": "database/firestore_rules.rules"
+  },
   "storage": {
     "rules": "storage.rules"
   },
